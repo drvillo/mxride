@@ -1,0 +1,4 @@
+<fonts>
+    <font id="Digits" filename="digits.fnt" antialias="false" filter="0123456789-"/>
+    <font id="Labels" filename="labels.fnt" antialias="false" filter=" 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ/.:-"/>
+</fonts>

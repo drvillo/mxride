@@ -1,0 +1,10 @@
+bin/*.der
+bin/*.pem
+bin/*.key
+bin/*.debug.xml
+bin/gen/
+bin/mir/
+bin/internal-mir/
+bin/external-mir/
+*.der
+*.pem
