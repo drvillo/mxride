@@ -89,7 +89,15 @@ The build script then writes compiler profiles for the 8, E, and 9 ids from the 
 ./scripts/build.sh
 ```
 
-Outputs `bin/mxride-<device>.prg` for every id in the tables above, plus `bin/mxride.iq`.
+Outputs `bin/mxride-<device>.prg` for every id in the tables above, plus `bin/mxride.iq`. That package keeps the beta app id `A7C3E91B4D2F4A6E8B1C0D5E7F908172`.
+
+Garmin will not take a beta app public. The public listing is a second app, same version and devices, app id `8C03D4377798050D9445D7B0820FB52A`, same signing key.
+
+```
+./scripts/build.sh --public
+```
+
+That writes `bin/mxride-public.iq` from `manifest-public.xml`. It does not rebuild the beta `.prg` files or `bin/mxride.iq`. The two manifests must match except for the app id, and the script refuses to build when they do not.
 
 The first run mints `bin/developer_key.der` with openssl when that file is missing. The key and `bin/developer_key.pem` are gitignored. The `.prg` files already in `bin/` were signed with a key that is not in this repo. To rebuild those same signatures, put your own `developer_key.der` in `bin/` before running the script. A different key is a different signature: remove the old sideload from the watch before installing the new one.
 
@@ -97,7 +105,7 @@ The first run mints `bin/developer_key.der` with openssl when that file is missi
 
 Plug the watch in over USB. Copy the `.prg` that matches the product into `GARMIN/APPS` on the watch drive. Eject, then start MX Ride from the app list.
 
-`bin/mxride.iq` is the package for Garmin Express or the store. USB sideload uses the `.prg`.
+`bin/mxride.iq` is the beta package. `bin/mxride-public.iq` is the public store package. USB sideload uses the `.prg`, which is the beta app.
 
 ## Buttons
 
