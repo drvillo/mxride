@@ -172,6 +172,10 @@ class RideSession {
         _session = null;
         _maxField = null;
         _lapMaxField = null;
+        _maxKmh = 0.0;
+        _lapMaxKmh = 0.0;
+        _lapStartMs = 0;
+        _laps = 0;
         _phase = PHASE_READY;
     }
 
