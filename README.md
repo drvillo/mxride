@@ -1,47 +1,95 @@
 # MX Ride
 
-Watch app for motocross and desert riding. Version 1.0.3. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track of the ride.
+Watch app for motocross and desert riding. Version 1.0.4. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track of the ride.
 
-Devices: fēnix 6, 6S, 6 Pro, 6S Pro, and 6X Pro, plus the fēnix 7 family. Solar and Dual Power are the same product id as the matching non-solar watch in SDK 9.3.0. There is no separate `fenix6x` id; the 6X is `fenix6xpro`. fēnix 7X is also Enduro 2 and tactix 7.
+Tested in the Connect IQ 9.3.0 simulator on a fēnix 6 Pro and a fēnix 7, both 260 px. Built for every fēnix 6, 7, 8, and 9 product id in that SDK, plus fēnix E. The 416, 454, and 466 faces have no simulator skin in this environment, so they were compiled and laid out, not screenshotted.
 
-![Ride page on fēnix 7, GPS playback](sim/fenix7-ride.png)
+![Ready, no fix, fēnix 6 Pro](sim/fenix6pro-ready.png)
 
-![Stats page on fēnix 7, GPS playback](sim/fenix7-stats.png)
+![Ready with a poor fix, fēnix 6 Pro](sim/fenix6pro-ready-fix.png)
 
-![Ready screen on fēnix 6 Pro, no fix](sim/fenix6pro-gps-search.png)
+![Ride page, fēnix 6 Pro](sim/fenix6pro-ride.png)
 
-![Track page on fēnix 6 Pro](sim/fenix6pro-track.png)
+![Stats page, fēnix 6 Pro](sim/fenix6pro-stats.png)
 
-![Track page on fēnix 7](sim/fenix7-track.png)
+![Track page, fēnix 6 Pro](sim/fenix6pro-track.png)
+
+![Save screen, fēnix 6 Pro](sim/fenix6pro-save.png)
+
+![Ready, no fix, fēnix 7](sim/fenix7-ready.png)
+
+![Ready with a poor fix, fēnix 7](sim/fenix7-ready-fix.png)
+
+![Ride page, fēnix 7](sim/fenix7-ride.png)
+
+![Stats page, fēnix 7](sim/fenix7-stats.png)
+
+![Track page, fēnix 7](sim/fenix7-track.png)
+
+![Save screen, fēnix 7](sim/fenix7-save.png)
+
+## Devices
+
+fēnix 6 family, including Solar and Dual Power. Those share the five product ids. There is no separate `fenix6x` id.
+
+| Watch | Product id | Screen |
+| --- | --- | --- |
+| fēnix 6, 6 Solar, 6 Dual Power | `fenix6` | 260 MIP |
+| fēnix 6S, 6S Solar, 6S Dual Power | `fenix6s` | 240 MIP |
+| fēnix 6 Pro, 6 Pro Solar, 6 Pro Dual Power | `fenix6pro` | 260 MIP |
+| fēnix 6S Pro, 6S Pro Solar, 6S Pro Dual Power | `fenix6spro` | 240 MIP |
+| fēnix 6X Pro, 6X Pro Solar | `fenix6xpro` | 280 MIP |
+
+fēnix 7 family. 7 Pro and the no-Wi-Fi variants were already in 1.0.3. Solar is not a separate id. fēnix 7X is also Enduro 2 and tactix 7.
+
+| Watch | Product id | Screen |
+| --- | --- | --- |
+| fēnix 7 | `fenix7` | 260 MIP |
+| fēnix 7S | `fenix7s` | 240 MIP |
+| fēnix 7X | `fenix7x` | 280 MIP |
+| fēnix 7 Pro | `fenix7pro` | 260 MIP |
+| fēnix 7S Pro | `fenix7spro` | 240 MIP |
+| fēnix 7X Pro | `fenix7xpro` | 280 MIP |
+| fēnix 7 Pro, no Wi-Fi | `fenix7pronowifi` | 260 MIP |
+| fēnix 7X Pro, no Wi-Fi | `fenix7xpronowifi` | 280 MIP |
+
+fēnix 8, fēnix E, and fēnix 9. These ids are in SDK 9.3.0 `devices.xml`. The SDK manager will not download the device pack without a Garmin developer login, so `scripts/import-sdk-devices.py` writes `compiler.json` from that XML. It does not copy another watch's `.bin`. A later official download is left alone.
+
+| Watch | Product id | Screen |
+| --- | --- | --- |
+| fēnix 8 43mm | `fenix843mm` | 416 AMOLED |
+| fēnix 8 47mm / 51mm, tactix 8 47/51, quatix 8 47/51 | `fenix847mm` | 454 AMOLED |
+| fēnix 8 Pro 47/51, MicroLED, quatix 8 Pro | `fenix8pro47mm` | 454 AMOLED |
+| fēnix 8 Solar 47mm | `fenix8solar47mm` | 260 MIP |
+| fēnix 8 Solar 51mm, tactix 8 Solar 51mm | `fenix8solar51mm` | 280 MIP |
+| fēnix E | `fenixe` | 416 AMOLED |
+| fēnix 9 43mm | `fenix943mm` | 416 AMOLED |
+| fēnix 9 47mm / 51mm | `fenix947mm` | 454 AMOLED |
+| fēnix 9 Pro 43mm | `fenix9pro43mm` | 416 AMOLED |
+| fēnix 9 Pro 47mm | `fenix9pro47mm` | 454 AMOLED |
+| fēnix 9 Pro 51mm | `fenix9pro51mm` | 466 AMOLED |
+| fēnix 9 Pro Solar 47mm | `fenix9prosolar47mm` | 260 MIP |
+| fēnix 9 Pro Solar 51mm | `fenix9prosolar51mm` | 280 MIP |
+
+240, 260, and 280 keep the top-weighted stack from 1.0.3. On 416, 454, and 466 the same block is centered, the track box is inset so the corners stay inside the circle, and the GPS ring is a 3 px stroke set in from the bezel. The background stays black. There is no solid white panel. The yellow SAVE bar is only on the save screen.
+
+fēnix 6 and 6S have a 128 KB watch-app limit. The 1.0.4 fēnix 6 `.prg` is 125964 bytes. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
 
 ## Build
 
 Connect IQ SDK 9.3.0. `monkeyc` must be on `PATH`, or set `CIQ_SDK` to the SDK root. Device definitions go in `~/.Garmin/ConnectIQ/Devices`.
 
-The SDK zip does not need a Garmin login. The SDK manager's device download does. These binaries were built with the device files from [berryk/Garmin-watchface `devices-v1.0.0`](https://github.com/berryk/Garmin-watchface/releases/download/devices-v1.0.0/connectiq-devices.zip). Unpack it so these folders sit next to each other:
+The SDK zip does not need a Garmin login. The SDK manager's device download does. The fēnix 6 and 7 folders used here came from [berryk/Garmin-watchface `devices-v1.0.0`](https://github.com/berryk/Garmin-watchface/releases/download/devices-v1.0.0/connectiq-devices.zip). Unpack it so these folders sit next to each other:
 
 `fenix6` `fenix6s` `fenix6pro` `fenix6spro` `fenix6xpro` `fenix7` `fenix7s` `fenix7x` `fenix7pro` `fenix7spro` `fenix7xpro` `fenix7pronowifi` `fenix7xpronowifi`
+
+The build script then writes compiler profiles for the 8, E, and 9 ids from the SDK jar.
 
 ```
 ./scripts/build.sh
 ```
 
-Outputs:
-
-- `bin/mxride-fenix6.prg`
-- `bin/mxride-fenix6s.prg`
-- `bin/mxride-fenix6pro.prg`
-- `bin/mxride-fenix6spro.prg`
-- `bin/mxride-fenix6xpro.prg`
-- `bin/mxride-fenix7.prg`
-- `bin/mxride-fenix7s.prg`
-- `bin/mxride-fenix7x.prg`
-- `bin/mxride-fenix7pro.prg`
-- `bin/mxride-fenix7spro.prg`
-- `bin/mxride-fenix7xpro.prg`
-- `bin/mxride-fenix7pronowifi.prg`
-- `bin/mxride-fenix7xpronowifi.prg`
-- `bin/mxride.iq`
+Outputs `bin/mxride-<device>.prg` for every id in the tables above, plus `bin/mxride.iq`.
 
 The first run mints `bin/developer_key.der` with openssl when that file is missing. The key and `bin/developer_key.pem` are gitignored. The `.prg` files already in `bin/` were signed with a key that is not in this repo. To rebuild those same signatures, put your own `developer_key.der` in `bin/` before running the script. A different key is a different signature: remove the old sideload from the watch before installing the new one.
 
@@ -80,14 +128,14 @@ The session is sport motorcycling, name Motocross. On Connect IQ 4.1.6 and later
 
 GPS is turned on when the app opens and stays on through pause, page changes, and save. It turns off only when the app exits. The call is `enableLocationEvents` with a continuous fix. SatIQ is requested only when `hasConfigurationSupport` says the watch has that configuration. fēnix 6 does not advertise SatIQ, so it takes the continuous path. The app does not pin multi-band max accuracy. A record is written either way, but latitude and longitude are filled in only while the watch has a fix. An indoor ride syncs an activity and Connect has nothing to draw a map from. `createSession` does not expose the recording interval, so 1 Hz versus smart recording stays with the device. The calorie number is the device algorithm. On a motorcycling activity that can be a poor estimate, because the bike is doing the work.
 
-Screens are 240 (6S, 6S Pro, 7S, 7S Pro), 260 (6, 6 Pro, 7, 7 Pro), and 280 (6X Pro, 7X, 7X Pro). The same layout scales the line step for the 240 face. fēnix 6 and 6S have a 128 KB watch-app limit. The Pro and 6X Pro parts have 1.25 MB, and the fēnix 7 parts have 768 KB.
-
 ## Fonts
 
-The official Connect IQ font pack returned HTTP 401 without a Garmin developer login. Asking the simulator for a missing system font crashes the app. MX Ride ships its own bitmap fonts in `resources/fonts`: a large 7-segment digit face and a smaller label face. `scripts/gen_fonts.py` regenerates both. Labels stay uppercase. That face has no lowercase and no degree sign.
+The official Connect IQ font pack returned HTTP 401 without a Garmin developer login. Asking the simulator for a missing system font crashes the app. MX Ride ships its own bitmap fonts in `resources/fonts`: a large 7-segment digit face and a smaller label face. `scripts/gen_fonts.py` regenerates both, plus the launcher icon at 40 px, 60 px (416 faces), and 65 px (454 and 466 faces). Labels stay uppercase. That face has no lowercase and no degree sign.
 
 ## Simulator
 
-`sim/desert-loop.gpx` is a two-minute rectangle at 50 km/h. With that file playing on the fēnix 7 simulator, the ride page showed 50 km/h, heading north, a running timer, and 0.1 km. The stats page showed a max of 50 and `UP 2`. That 2 m is the simulator's own ascent from a bad altitude series, not the climb in the file. The same run reported altitude near -450 m and no heart rate. This simulator did not apply the file's elevation or its heart-rate extension. The app drew the numbers the simulator supplied.
+`sim/desert-loop.gpx` is a two-minute rectangle at 50 km/h. On the fēnix 6 Pro and the fēnix 7, playback showed 50 km/h, a heading, a running timer, and distance. The track page drew the north-up line, an `N`, and a `100M` scale. The same run reported altitude near -450 m and no heart rate. This simulator did not apply the file's elevation or its heart-rate extension. The app drew the numbers the simulator supplied.
 
-A later save on that same fēnix 7 run wrote a FIT with sport 22, subsport 36, GPS records, two laps, and both developer fields. Heart rate was absent and the altitude was the simulator's bad series. The 240 and 280 faces share the layout math and were compiled, not screenshotted. The non-sapphire simulator profile does not advertise SatIQ, so that run used a continuous fix.
+The simulator never reported a usable or good fix. With the file playing, the ring and the `GPS` / `SEARCHING` line stayed orange and the bars showed one red bar. The green `GPS READY` state is in the code and was not screenshotted. The no-fix ready screen is the red ring.
+
+The 240 and 280 faces share the 1.0.3 layout and were compiled, not screenshotted. The 416, 454, and 466 faces were compiled with the centered layout. There is no skin for those devices in the installed pack.

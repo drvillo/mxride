@@ -173,20 +173,34 @@ def labels():
     )
 
 
-def launcher():
-    icon = Image.new("RGB", (40, 40), (0, 0, 0))
+def launcher_image(size):
+    icon = Image.new("RGB", (size, size), (0, 0, 0))
     yellow = (255, 214, 0)
-    for y in range(8, 32):
-        for x in range(6, 34):
-            left = abs(x - 12) < 3 and y >= 10
-            right = abs(x - 28) < 3 and y >= 10
-            mid = abs((x - 20) * 2 + (y - 28)) < 4 and 14 <= y <= 30
-            top = 10 <= y <= 14 and 9 <= x <= 31
+    for y in range(size):
+        for x in range(size):
+            gx = x * 40.0 / size
+            gy = y * 40.0 / size
+            left = abs(gx - 12) < 3 and gy >= 10
+            right = abs(gx - 28) < 3 and gy >= 10
+            mid = abs((gx - 20) * 2 + (gy - 28)) < 4 and 14 <= gy <= 30
+            top = 10 <= gy <= 14 and 9 <= gx <= 31
             if left or right or mid or top:
                 icon.putpixel((x, y), yellow)
-    draw_dir = ROOT / "resources" / "drawables"
-    draw_dir.mkdir(parents=True, exist_ok=True)
-    icon.save(draw_dir / "launcher.png")
+    return icon
+
+
+def launcher():
+    base = ROOT / "resources" / "drawables"
+    base.mkdir(parents=True, exist_ok=True)
+    launcher_image(40).save(base / "launcher.png")
+    # 416 faces want 60 px, 454 and 466 want 65. A matching bitmap avoids a scaled icon.
+    for family, size in (("round-416x416", 60), ("round-454x454", 65), ("round-466x466", 65)):
+        folder = ROOT / ("resources-" + family) / "drawables"
+        folder.mkdir(parents=True, exist_ok=True)
+        launcher_image(size).save(folder / "launcher.png")
+        (folder / "drawables.xml").write_text(
+            "<drawables>\n    <bitmap id=\"LauncherIcon\" filename=\"launcher.png\" />\n</drawables>\n"
+        )
 
 
 def main():

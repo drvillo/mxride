@@ -51,9 +51,9 @@ class RideView extends WatchUi.View {
 
     private function drawRide(dc as Dc, w as Number, h as Number, digits as FontResource, labels as FontResource) as Void {
         var snap = _snap;
-        var step = h >= 260 ? 26 : 24;
+        var step = lineStep(h);
         var digitH = dc.getFontHeight(digits);
-        var y = h >= 260 ? 10 : 6;
+        var y = lineTop(h, step, digitH);
         text(dc, w / 2, y, labels, phaseWord(snap.phase), phaseColor(snap.phase), Graphics.TEXT_JUSTIFY_CENTER);
         y += step;
         text(dc, w / 2, y, digits, Mx.formatNumber(snap.speedKmh), Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
@@ -95,9 +95,9 @@ class RideView extends WatchUi.View {
 
     private function drawStats(dc as Dc, w as Number, h as Number, digits as FontResource, labels as FontResource) as Void {
         var snap = _snap;
-        var step = h >= 260 ? 26 : 24;
+        var step = lineStep(h);
         var digitH = dc.getFontHeight(digits);
-        var y = h >= 260 ? 10 : 6;
+        var y = lineTop(h, step, digitH);
         text(dc, w / 2, y, labels, phaseWord(snap.phase), phaseColor(snap.phase), Graphics.TEXT_JUSTIFY_CENTER);
         y += step;
         text(dc, w / 2, y, labels, "MAX", Graphics.COLOR_LT_GRAY, Graphics.TEXT_JUSTIFY_CENTER);
@@ -170,10 +170,7 @@ class RideView extends WatchUi.View {
         if (spanLon > spanLat) {
             span = spanLon;
         }
-        var box = w / 2 - 46;
-        if (h < w) {
-            box = h / 2 - 46;
-        }
+        var box = trackBox(w < h ? w : h);
         var scale = ((box * 2.0) / span).toFloat();
         var cx = w / 2;
         var cy = h / 2;
@@ -312,13 +309,54 @@ class RideView extends WatchUi.View {
 
     private function drawGpsRing(dc as Dc, w as Number, h as Number) as Void {
         dc.setColor(gpsColor(_snap.gpsAccuracy), Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(4);
+        // Thin stroke on a black field. AMOLED faces get a little more inset so the ring is not parked on the bezel.
+        dc.setPenWidth(h >= 400 ? 3 : 4);
         var r = w / 2 - 3;
         if (h < w) {
             r = h / 2 - 3;
         }
+        if (r > 200) {
+            r = r - 8;
+        }
         dc.drawCircle(w / 2, h / 2, r);
         dc.setPenWidth(1);
+    }
+
+    private function lineStep(h as Number) as Number {
+        if (h >= 450) {
+            return 36;
+        }
+        if (h >= 400) {
+            return 32;
+        }
+        if (h >= 260) {
+            return 26;
+        }
+        return 24;
+    }
+
+    // 240, 260, and 280 keep the top-weighted stack that fits the round MIP faces.
+    // 416, 454, and 466 center that same stack so it does not sit in the top of the circle.
+    private function lineTop(h as Number, step as Number, digitH as Number) as Number {
+        if (h < 400) {
+            return h >= 260 ? 10 : 6;
+        }
+        var block = step + digitH + 4 + step * 4;
+        var y = (h - block) / 2;
+        if (y < 28) {
+            return 28;
+        }
+        return y;
+    }
+
+    private function trackBox(side as Number) as Number {
+        var inset = 46;
+        if (side >= 450) {
+            inset = 78;
+        } else if (side >= 400) {
+            inset = 70;
+        }
+        return side / 2 - inset;
     }
 
     private function drawGpsBars(dc as Dc, w as Number, h as Number) as Void {
