@@ -51,13 +51,17 @@ class RideView extends WatchUi.View {
         y += step;
         text(dc, w / 2, y, digits, Mx.formatNumber(snap.speedKmh), Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
         y += digitH + 4;
-        var course = "--";
-        if (snap.headingDeg != null) {
-            var deg = snap.headingDeg as Number;
-            course = deg.toString() + " " + Mx.cardinal(deg);
-            drawNeedle(dc, w / 2 + 68, y + 10, 11, deg);
+        if (snap.phase == PHASE_PAUSED) {
+            text(dc, w / 2, y, labels, "START: SAVE", Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
+        } else {
+            var course = "--";
+            if (snap.headingDeg != null) {
+                var deg = snap.headingDeg as Number;
+                course = deg.toString() + " " + Mx.cardinal(deg);
+                drawNeedle(dc, w / 2 + 68, y + 10, 11, deg);
+            }
+            text(dc, w / 2, y, labels, course, Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
         }
-        text(dc, w / 2, y, labels, course, Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
         y += step;
         text(dc, w / 2, y, labels, "A " + Mx.formatNumber(snap.altitudeM), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
         y += step;
@@ -86,7 +90,11 @@ class RideView extends WatchUi.View {
         y += step;
         text(dc, w / 2, y, digits, Mx.formatNumber(snap.maxSpeedKmh), Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
         y += digitH + 4;
-        text(dc, w / 2, y, labels, "UP " + Mx.formatNumber(snap.ascentM), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        if (snap.phase == PHASE_PAUSED) {
+            text(dc, w / 2, y, labels, "START: SAVE", Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
+        } else {
+            text(dc, w / 2, y, labels, "UP " + Mx.formatNumber(snap.ascentM), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        }
         y += step;
         text(dc, w / 2, y, labels, "LAP " + Mx.formatTimer(snap.lapMs), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
         y += step;
@@ -95,16 +103,18 @@ class RideView extends WatchUi.View {
 
     private function drawConfirm(dc as Dc, w as Number, h as Number, labels as FontResource) as Void {
         var labelH = dc.getFontHeight(labels);
-        var saving = _snap.choice == CHOICE_SAVE;
-        text(dc, w / 2, h / 2 - labelH * 3, labels, "PAUSED", Graphics.COLOR_ORANGE, Graphics.TEXT_JUSTIFY_CENTER);
-        choice(dc, w, h / 2 - labelH, "SAVE", labels, labelH, saving);
-        choice(dc, w, h / 2 + labelH, "DISCARD", labels, labelH, !saving);
+        var gap = labelH + 4;
+        var mid = h / 2;
+        text(dc, w / 2, mid - gap * 2, labels, "PAUSED", Graphics.COLOR_ORANGE, Graphics.TEXT_JUSTIFY_CENTER);
+        choice(dc, w, mid - gap, "RESUME", labels, labelH, _snap.choice == CHOICE_RESUME);
+        choice(dc, w, mid, "SAVE", labels, labelH, _snap.choice == CHOICE_SAVE);
+        choice(dc, w, mid + gap, "DISCARD", labels, labelH, _snap.choice == CHOICE_DISCARD);
     }
 
     private function choice(dc as Dc, w as Number, y as Number, word as String, font as FontResource, labelH as Number, on as Boolean) as Void {
         if (on) {
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_YELLOW);
-            dc.fillRectangle(w / 2 - 70, y - 2, 140, labelH + 4);
+            dc.fillRectangle(w / 2 - 82, y - 2, 164, labelH + 4);
             text(dc, w / 2, y, font, word, Graphics.COLOR_BLACK, Graphics.TEXT_JUSTIFY_CENTER);
         } else {
             text(dc, w / 2, y, font, word, Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);

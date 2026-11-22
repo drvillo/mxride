@@ -15,6 +15,7 @@ enum Phase {
 }
 
 enum Choice {
+    CHOICE_RESUME,
     CHOICE_SAVE,
     CHOICE_DISCARD
 }
@@ -157,14 +158,35 @@ class RideSession {
         }
     }
 
-    function chooseConfirm(choice as Choice) as Void {
-        if (_phase == PHASE_CONFIRM) {
-            _choice = choice;
+    function moveChoice(down as Boolean) as Void {
+        if (_phase != PHASE_CONFIRM) {
+            return;
+        }
+        if (down) {
+            if (_choice == CHOICE_RESUME) {
+                _choice = CHOICE_SAVE;
+            } else if (_choice == CHOICE_SAVE) {
+                _choice = CHOICE_DISCARD;
+            } else {
+                _choice = CHOICE_RESUME;
+            }
+        } else if (_choice == CHOICE_DISCARD) {
+            _choice = CHOICE_SAVE;
+        } else if (_choice == CHOICE_SAVE) {
+            _choice = CHOICE_RESUME;
+        } else {
+            _choice = CHOICE_DISCARD;
         }
     }
 
     function acceptConfirm() as Void {
         if (_phase != PHASE_CONFIRM) {
+            return;
+        }
+        if (_choice == CHOICE_RESUME) {
+            if (liveSession().start()) {
+                _phase = PHASE_RECORDING;
+            }
             return;
         }
         if (_choice == CHOICE_SAVE) {

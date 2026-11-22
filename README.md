@@ -1,6 +1,6 @@
 # MX Ride
 
-Watch app for motocross and desert riding. Version 1.0.1. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed, total ascent, and the lap timer.
+Watch app for motocross and desert riding. Version 1.0.2. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed, total ascent, and the lap timer.
 
 Devices: fēnix 6, 6S, 6 Pro, 6S Pro, and 6X Pro, plus the fēnix 7 family. Solar and Dual Power are the same product id as the matching non-solar watch in SDK 9.3.0. There is no separate `fenix6x` id; the 6X is `fenix6xpro`. fēnix 7X is also Enduro 2 and tactix 7.
 
@@ -53,10 +53,12 @@ Physical buttons. Touch is not the control.
 
 | Button | Action |
 | --- | --- |
-| START, short | Ready: start. Recording: pause. Paused: resume. Save screen: accept the highlighted choice. |
-| START, long, or MENU | Pause if a session is recording, then open SAVE / DISCARD. |
-| UP / DOWN | Switch the two pages. On the save screen, move the highlight. |
+| START, short | Ready: start. Recording: pause. Paused: open the save screen. Save screen: accept the highlighted row. |
+| START, long, or hold UP (MENU) | Open the save screen. A recording pauses once on the way in. |
+| UP / DOWN | Switch the two pages. On the save screen, move through RESUME, SAVE, and DISCARD. |
 | BACK | Recording or paused: lap. Save screen: back to paused. Ready: leave the app. |
+
+The save screen lists RESUME, SAVE, DISCARD. SAVE is highlighted when it opens. While paused, the ride page shows `START: SAVE` in place of the heading, and the stats page shows it in place of the ascent line.
 
 Page 1 is speed in km/h, heading in degrees plus a cardinal and a needle, `A` for altitude in meters, `H` for heart rate, then the timer and distance in km.
 
