@@ -1,5 +1,6 @@
 import Toybox.Activity;
 import Toybox.ActivityRecording;
+import Toybox.Attention;
 import Toybox.FitContributor;
 import Toybox.Lang;
 import Toybox.Math;
@@ -22,7 +23,8 @@ enum Choice {
 
 enum Page {
     PAGE_RIDE,
-    PAGE_STATS
+    PAGE_STATS,
+    PAGE_TRACK
 }
 
 class Snapshot {
@@ -40,6 +42,11 @@ class Snapshot {
     var ascentM as Number or Null;
     var lapMs as Number = 0;
     var laps as Number = 0;
+    var gpsAccuracy as Number = 0;
+    var hereLat as Float or Null;
+    var hereLon as Float or Null;
+    var trackLats as Array = [];
+    var trackLons as Array = [];
 
     function initialize() {
     }
@@ -58,9 +65,14 @@ class RideSession {
     private var _laps as Number = 0;
     private var _position as Position.Info or Null;
     private var _zones as Array<Number>;
+    private var _lats as Array;
+    private var _lons as Array;
+    private var _gpsReady as Boolean = false;
 
     function initialize() {
         _zones = UserProfile.getHeartRateZones(UserProfile.HR_ZONE_SPORT_GENERIC);
+        _lats = [];
+        _lons = [];
     }
 
     function phase() as Phase {
@@ -84,6 +96,52 @@ class RideSession {
 
     function onPosition(info as Position.Info) as Void {
         _position = info;
+        var accuracy = info.accuracy;
+        var ready = accuracy >= Position.QUALITY_USABLE;
+        if (ready && !_gpsReady && _phase == PHASE_READY && (Attention has :vibrate)) {
+            Attention.vibrate([new Attention.VibeProfile(70, 140)]);
+        }
+        _gpsReady = ready;
+        var loc = info.position;
+        if (loc != null && _phase == PHASE_RECORDING && accuracy >= Position.QUALITY_POOR) {
+            var deg = loc.toDegrees();
+            addTrack(deg[0].toFloat(), deg[1].toFloat());
+        }
+    }
+
+    private function addTrack(lat as Float, lon as Float) as Void {
+        var n = _lats.size();
+        if (n > 0) {
+            var lat0 = _lats[n - 1] as Float;
+            var lon0 = _lons[n - 1] as Float;
+            var north = (lat - lat0) * 111320.0;
+            var east = (lon - lon0) * 111320.0 * Math.cos(Math.toRadians(lat));
+            if (north * north + east * east < 144.0) {
+                return;
+            }
+        }
+        if (n >= 96) {
+            thinTrack();
+        }
+        _lats.add(lat);
+        _lons.add(lon);
+    }
+
+    private function thinTrack() as Void {
+        var nextLats = [];
+        var nextLons = [];
+        var n = _lats.size();
+        for (var i = 0; i < n; i += 2) {
+            nextLats.add(_lats[i]);
+            nextLons.add(_lons[i]);
+        }
+        _lats = nextLats;
+        _lons = nextLons;
+    }
+
+    private function clearTrack() as Void {
+        _lats = [];
+        _lons = [];
     }
 
     function startOrResume() as Void {
@@ -110,6 +168,7 @@ class RideSession {
                 _lapMaxField = null;
                 return;
             }
+            clearTrack();
             _session = session;
             _phase = PHASE_RECORDING;
         } else if (_phase == PHASE_PAUSED) {
@@ -202,6 +261,7 @@ class RideSession {
         _lapStartMs = 0;
         _laps = 0;
         _phase = PHASE_READY;
+        clearTrack();
     }
 
     function cancelConfirm() as Void {
@@ -211,11 +271,23 @@ class RideSession {
     }
 
     function nextPage() as Void {
-        _page = _page == PAGE_RIDE ? PAGE_STATS : PAGE_RIDE;
+        if (_page == PAGE_RIDE) {
+            _page = PAGE_STATS;
+        } else if (_page == PAGE_STATS) {
+            _page = PAGE_TRACK;
+        } else {
+            _page = PAGE_RIDE;
+        }
     }
 
     function previousPage() as Void {
-        nextPage();
+        if (_page == PAGE_RIDE) {
+            _page = PAGE_TRACK;
+        } else if (_page == PAGE_TRACK) {
+            _page = PAGE_STATS;
+        } else {
+            _page = PAGE_RIDE;
+        }
     }
 
     function sample() as Void {
@@ -271,6 +343,18 @@ class RideSession {
         if (hr != null) {
             snap.hrZone = Mx.zoneIndex(hr, _zones);
         }
+        var gps = _position;
+        if (gps != null) {
+            snap.gpsAccuracy = gps.accuracy;
+            var loc = gps.position;
+            if (loc != null) {
+                var deg = loc.toDegrees();
+                snap.hereLat = deg[0].toFloat();
+                snap.hereLon = deg[1].toFloat();
+            }
+        }
+        snap.trackLats = _lats;
+        snap.trackLons = _lons;
         return snap;
     }
 

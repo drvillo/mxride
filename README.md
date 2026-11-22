@@ -1,6 +1,6 @@
 # MX Ride
 
-Watch app for motocross and desert riding. Version 1.0.2. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed, total ascent, and the lap timer.
+Watch app for motocross and desert riding. Version 1.0.3. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track of the ride.
 
 Devices: fēnix 6, 6S, 6 Pro, 6S Pro, and 6X Pro, plus the fēnix 7 family. Solar and Dual Power are the same product id as the matching non-solar watch in SDK 9.3.0. There is no separate `fenix6x` id; the 6X is `fenix6xpro`. fēnix 7X is also Enduro 2 and tactix 7.
 
@@ -8,7 +8,11 @@ Devices: fēnix 6, 6S, 6 Pro, 6S Pro, and 6X Pro, plus the fēnix 7 family. Sola
 
 ![Stats page on fēnix 7, GPS playback](sim/fenix7-stats.png)
 
-![Ready screen on fēnix 6 Pro](sim/fenix6pro-ride.png)
+![Ready screen on fēnix 6 Pro, no fix](sim/fenix6pro-gps-search.png)
+
+![Track page on fēnix 6 Pro](sim/fenix6pro-track.png)
+
+![Track page on fēnix 7](sim/fenix7-track.png)
 
 ## Build
 
@@ -55,7 +59,7 @@ Physical buttons. Touch is not the control.
 | --- | --- |
 | START, short | Ready: start. Recording: pause. Paused: open the save screen. Save screen: accept the highlighted row. |
 | START, long, or hold UP (MENU) | Open the save screen. A recording pauses once on the way in. |
-| UP / DOWN | Switch the two pages. On the save screen, move through RESUME, SAVE, and DISCARD. |
+| UP / DOWN | Switch the three pages. On the save screen, move through RESUME, SAVE, and DISCARD. |
 | BACK | Recording or paused: lap. Save screen: back to paused. Ready: leave the app. |
 
 The save screen lists RESUME, SAVE, DISCARD. SAVE is highlighted when it opens. While paused, the ride page shows `START: SAVE` in place of the heading, and the stats page shows it in place of the ascent line.
@@ -64,13 +68,17 @@ Page 1 is speed in km/h, heading in degrees plus a cardinal and a needle, `A` fo
 
 Page 2 is `MAX` speed, `UP` for total ascent in meters, the current lap time, and the lap count.
 
+Page 3 is the track. It is a north-up line of the ride so far, scaled to the current position, with a heading arrow and a scale bar. Map tiles are not used. fēnix 6 and fēnix 6S have no map view, so every device draws the line itself. The line keeps at most 96 points and drops every other point once it fills, so a long ride stays a coarse shape of the whole loop.
+
+Before the ride starts, the ready screen draws a ring and `GPS` / `SEARCHING` in red until there is a poor fix, then orange, then `GPS` / `READY` in green once accuracy is usable or good. The label font cannot fit `GPS SEARCHING` on one line of a 240 face, so the two words are stacked. A short vibration fires the first time the ready screen reaches that fix. START still begins a ride with no fix. While recording or paused, four bars sit on the upper right of every page: grey for no fix, one red bar for poor, two yellow bars for usable, four green bars for good.
+
 Missing GPS or heart rate draws `--`. Speed stays `--` until there is a fix. A zero is not used as a stand-in.
 
 ## What is recorded
 
 The session is sport motorcycling, name Motocross. On Connect IQ 4.1.6 and later the subsport is motocross. fēnix 6 is API 3.4, which has no motocross subsport, so that field is left off and the sport stays motorcycling. The FIT gets the GPS track, speed, distance, elevation, ascent, timer, laps, heart rate when the watch has a reading, and the device's own calorie figure. Two developer fields, both in km/h: `max_speed` on the session, `lap_max_speed` on each lap.
 
-GPS asks for SatIQ only when `hasConfigurationSupport` says the watch has that configuration. Otherwise it uses a continuous fix. fēnix 6 does not advertise SatIQ, so it takes the continuous path. The app does not pin multi-band max accuracy. `createSession` does not expose the recording interval, so 1 Hz versus smart recording stays with the device. The calorie number is the device algorithm. On a motorcycling activity that can be a poor estimate, because the bike is doing the work.
+GPS is turned on when the app opens and stays on through pause, page changes, and save. It turns off only when the app exits. The call is `enableLocationEvents` with a continuous fix. SatIQ is requested only when `hasConfigurationSupport` says the watch has that configuration. fēnix 6 does not advertise SatIQ, so it takes the continuous path. The app does not pin multi-band max accuracy. A record is written either way, but latitude and longitude are filled in only while the watch has a fix. An indoor ride syncs an activity and Connect has nothing to draw a map from. `createSession` does not expose the recording interval, so 1 Hz versus smart recording stays with the device. The calorie number is the device algorithm. On a motorcycling activity that can be a poor estimate, because the bike is doing the work.
 
 Screens are 240 (6S, 6S Pro, 7S, 7S Pro), 260 (6, 6 Pro, 7, 7 Pro), and 280 (6X Pro, 7X, 7X Pro). The same layout scales the line step for the 240 face. fēnix 6 and 6S have a 128 KB watch-app limit. The Pro and 6X Pro parts have 1.25 MB, and the fēnix 7 parts have 768 KB.
 
