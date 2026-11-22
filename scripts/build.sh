@@ -21,6 +21,11 @@ if [[ ! -f "$KEY" ]]; then
 fi
 
 devices=(
+	fenix6
+	fenix6s
+	fenix6pro
+	fenix6spro
+	fenix6xpro
 	fenix7
 	fenix7s
 	fenix7x

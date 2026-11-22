@@ -67,7 +67,7 @@ class RideSession {
     }
 
     function startPositioning() as Void {
-        if (Position.hasConfigurationSupport(Position.CONFIGURATION_SAT_IQ)) {
+        if ((Position has :hasConfigurationSupport) && (Position has :CONFIGURATION_SAT_IQ) && Position.hasConfigurationSupport(Position.CONFIGURATION_SAT_IQ)) {
             Position.enableLocationEvents({
                 :acquisitionType => Position.LOCATION_CONTINUOUS,
                 :configuration => Position.CONFIGURATION_SAT_IQ
@@ -87,11 +87,14 @@ class RideSession {
 
     function startOrResume() as Void {
         if (_phase == PHASE_READY) {
-            var session = ActivityRecording.createSession({
+            var options = {
                 :name => "Motocross",
-                :sport => Activity.SPORT_MOTORCYCLING,
-                :subSport => Activity.SUB_SPORT_MOTOCROSS
-            });
+                :sport => Activity.SPORT_MOTORCYCLING
+            };
+            if (Activity has :SUB_SPORT_MOTOCROSS) {
+                options[:subSport] = Activity.SUB_SPORT_MOTOCROSS;
+            }
+            var session = ActivityRecording.createSession(options);
             _maxField = session.createField("max_speed", 0, FitContributor.DATA_TYPE_FLOAT,
                 { :mesgType => FitContributor.MESG_TYPE_SESSION, :units => "km/h" });
             _lapMaxField = session.createField("lap_max_speed", 1, FitContributor.DATA_TYPE_FLOAT,

@@ -1,18 +1,22 @@
 # MX Ride
 
-Watch app for motocross and desert riding on the fēnix 7 family. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed, total ascent, and the lap timer.
+Watch app for motocross and desert riding. Version 1.0.1. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed, total ascent, and the lap timer.
+
+Devices: fēnix 6, 6S, 6 Pro, 6S Pro, and 6X Pro, plus the fēnix 7 family. Solar and Dual Power are the same product id as the matching non-solar watch in SDK 9.3.0. There is no separate `fenix6x` id; the 6X is `fenix6xpro`. fēnix 7X is also Enduro 2 and tactix 7.
 
 ![Ride page on fēnix 7, GPS playback](sim/fenix7-ride.png)
 
 ![Stats page on fēnix 7, GPS playback](sim/fenix7-stats.png)
 
+![Ready screen on fēnix 6 Pro](sim/fenix6pro-ride.png)
+
 ## Build
 
-Connect IQ SDK 9.3.0. `monkeyc` must be on `PATH`, or set `CIQ_SDK` to the SDK root. Device definitions for the eight fēnix 7 products go in `~/.Garmin/ConnectIQ/Devices`.
+Connect IQ SDK 9.3.0. `monkeyc` must be on `PATH`, or set `CIQ_SDK` to the SDK root. Device definitions go in `~/.Garmin/ConnectIQ/Devices`.
 
 The SDK zip does not need a Garmin login. The SDK manager's device download does. These binaries were built with the device files from [berryk/Garmin-watchface `devices-v1.0.0`](https://github.com/berryk/Garmin-watchface/releases/download/devices-v1.0.0/connectiq-devices.zip). Unpack it so these folders sit next to each other:
 
-`fenix7` `fenix7s` `fenix7x` `fenix7pro` `fenix7spro` `fenix7xpro` `fenix7pronowifi` `fenix7xpronowifi`
+`fenix6` `fenix6s` `fenix6pro` `fenix6spro` `fenix6xpro` `fenix7` `fenix7s` `fenix7x` `fenix7pro` `fenix7spro` `fenix7xpro` `fenix7pronowifi` `fenix7xpronowifi`
 
 ```
 ./scripts/build.sh
@@ -20,6 +24,11 @@ The SDK zip does not need a Garmin login. The SDK manager's device download does
 
 Outputs:
 
+- `bin/mxride-fenix6.prg`
+- `bin/mxride-fenix6s.prg`
+- `bin/mxride-fenix6pro.prg`
+- `bin/mxride-fenix6spro.prg`
+- `bin/mxride-fenix6xpro.prg`
 - `bin/mxride-fenix7.prg`
 - `bin/mxride-fenix7s.prg`
 - `bin/mxride-fenix7x.prg`
@@ -57,9 +66,11 @@ Missing GPS or heart rate draws `--`. Speed stays `--` until there is a fix. A z
 
 ## What is recorded
 
-The session is sport motorcycling, subsport motocross, name Motocross. The FIT gets the GPS track, speed, distance, elevation, ascent, timer, laps, heart rate when the watch has a reading, and the device's own calorie figure. Two developer fields, both in km/h: `max_speed` on the session, `lap_max_speed` on each lap.
+The session is sport motorcycling, name Motocross. On Connect IQ 4.1.6 and later the subsport is motocross. fēnix 6 is API 3.4, which has no motocross subsport, so that field is left off and the sport stays motorcycling. The FIT gets the GPS track, speed, distance, elevation, ascent, timer, laps, heart rate when the watch has a reading, and the device's own calorie figure. Two developer fields, both in km/h: `max_speed` on the session, `lap_max_speed` on each lap.
 
-GPS uses SatIQ when the watch supports that configuration, otherwise a continuous single-band fix. It does not pin multi-band max accuracy. `createSession` does not expose the recording interval, so 1 Hz versus smart recording stays with the device. The calorie number is the device algorithm. On a motorcycling activity that can be a poor estimate, because the bike is doing the work.
+GPS asks for SatIQ only when `hasConfigurationSupport` says the watch has that configuration. Otherwise it uses a continuous fix. fēnix 6 does not advertise SatIQ, so it takes the continuous path. The app does not pin multi-band max accuracy. `createSession` does not expose the recording interval, so 1 Hz versus smart recording stays with the device. The calorie number is the device algorithm. On a motorcycling activity that can be a poor estimate, because the bike is doing the work.
+
+Screens are 240 (6S, 6S Pro, 7S, 7S Pro), 260 (6, 6 Pro, 7, 7 Pro), and 280 (6X Pro, 7X, 7X Pro). The same layout scales the line step for the 240 face. fēnix 6 and 6S have a 128 KB watch-app limit. The Pro and 6X Pro parts have 1.25 MB, and the fēnix 7 parts have 768 KB.
 
 ## Fonts
 
@@ -69,4 +80,4 @@ The official Connect IQ font pack returned HTTP 401 without a Garmin developer l
 
 `sim/desert-loop.gpx` is a two-minute rectangle at 50 km/h. With that file playing on the fēnix 7 simulator, the ride page showed 50 km/h, heading north, a running timer, and 0.1 km. The stats page showed a max of 50 and `UP 2`. That 2 m is the simulator's own ascent from a bad altitude series, not the climb in the file. The same run reported altitude near -450 m and no heart rate. This simulator did not apply the file's elevation or its heart-rate extension. The app drew the numbers the simulator supplied.
 
-The save and discard screen, the lap button, and the written FIT file were not opened in that run. The timer and distance moved, which is the session recording. The other seven prgs were compiled in the same build and not loaded in the simulator, so the 240 and 280 faces were not screenshotted. The non-sapphire simulator profile does not advertise SatIQ, so that run used a continuous fix.
+A later save on that same fēnix 7 run wrote a FIT with sport 22, subsport 36, GPS records, two laps, and both developer fields. Heart rate was absent and the altitude was the simulator's bad series. The 240 and 280 faces share the layout math and were compiled, not screenshotted. The non-sapphire simulator profile does not advertise SatIQ, so that run used a continuous fix.
