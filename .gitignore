@@ -49,3 +49,6 @@ desktop.ini
 *.swn
 *~
 .idea/
+
+# Vendored Cursor agent skills (reinstall with pstack)
+.cursor/skills/
