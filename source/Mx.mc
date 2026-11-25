@@ -49,4 +49,18 @@ module Mx {
     function formatNumber(value as Number or Null) as String {
         return value == null ? "--" : value.toString();
     }
+
+    function formatAir(milliseconds as Number) as String {
+        if (milliseconds <= 0) {
+            return "--";
+        }
+        var tenths = (milliseconds + 50) / 100;
+        var whole = tenths / 10;
+        var frac = tenths % 10;
+        return whole.toString() + "." + frac.toString() + "S";
+    }
+
+    function formatRate(accel as Number, gyro as Number) as String {
+        return "A" + accel.toString() + " G" + gyro.toString();
+    }
 }

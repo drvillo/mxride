@@ -6,6 +6,7 @@ import Toybox.Lang;
 import Toybox.Math;
 import Toybox.Position;
 import Toybox.Sensor;
+import Toybox.System;
 import Toybox.UserProfile;
 
 enum Phase {
@@ -24,7 +25,8 @@ enum Choice {
 enum Page {
     PAGE_RIDE,
     PAGE_STATS,
-    PAGE_TRACK
+    PAGE_TRACK,
+    PAGE_JUMPS
 }
 
 class Snapshot {
@@ -47,6 +49,12 @@ class Snapshot {
     var hereLon as Float or Null;
     var trackLats as Array = [];
     var trackLons as Array = [];
+    var jumpCount as Number = 0;
+    var jumpLastMs as Number = 0;
+    var jumpLongestMs as Number = 0;
+    var jumpTotalMs as Number = 0;
+    var accelRate as Number = 0;
+    var gyroRate as Number = 0;
 
     function initialize() {
     }
@@ -68,6 +76,21 @@ class RideSession {
     private var _lats as Array;
     private var _lons as Array;
     private var _gpsReady as Boolean = false;
+    private var _jumpCountField as FitContributor.Field or Null;
+    private var _jumpAirField as FitContributor.Field or Null;
+    private var _jumpLongField as FitContributor.Field or Null;
+    private var _jumpLastField as FitContributor.Field or Null;
+    private var _recentField as FitContributor.Field or Null;
+    private var _lapJumpCountField as FitContributor.Field or Null;
+    private var _lapJumpAirField as FitContributor.Field or Null;
+    private var _lapJumpLongField as FitContributor.Field or Null;
+    private var _jumps as JumpDetector or Null;
+    private var _listening as Boolean = false;
+    private var _listenRate as Number = 0;
+    private var _gyroOn as Boolean = false;
+    private var _accelRate as Number = 0;
+    private var _gyroRate as Number = 0;
+    private var _recordHold as Boolean = false;
 
     function initialize() {
         _zones = UserProfile.getHeartRateZones(UserProfile.HR_ZONE_SPORT_GENERIC);
@@ -92,6 +115,18 @@ class RideSession {
 
     function stopPositioning() as Void {
         Position.enableLocationEvents(Position.LOCATION_DISABLE, method(:onPosition));
+    }
+
+    function noteRates() as Void {
+        readRates();
+    }
+
+    function releaseSensors() as Void {
+        stopListen();
+        var jumps = _jumps;
+        if (jumps != null) {
+            jumps.abort();
+        }
     }
 
     function onPosition(info as Position.Info) as Void {
@@ -158,28 +193,38 @@ class RideSession {
                 { :mesgType => FitContributor.MESG_TYPE_SESSION, :units => "km/h" });
             _lapMaxField = session.createField("lap_max_speed", 1, FitContributor.DATA_TYPE_FLOAT,
                 { :mesgType => FitContributor.MESG_TYPE_LAP, :units => "km/h" });
+            _jumpCountField = tryField(session, "jump_count", 2, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_SESSION, "count", 0);
+            _jumpAirField = tryField(session, "jump_air_ms", 3, FitContributor.DATA_TYPE_UINT32, FitContributor.MESG_TYPE_SESSION, "ms", 0);
+            _jumpLongField = tryField(session, "jump_longest_ms", 4, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_SESSION, "ms", 0);
+            _jumpLastField = tryField(session, "jump_last_ms", 5, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_RECORD, "ms", 0);
+            _recentField = tryField(session, "jump_recent_ms", 6, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_SESSION, "ms", 32);
+            _lapJumpCountField = tryField(session, "jump_count", 7, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_LAP, "count", 0);
+            _lapJumpAirField = tryField(session, "jump_air_ms", 8, FitContributor.DATA_TYPE_UINT32, FitContributor.MESG_TYPE_LAP, "ms", 0);
+            _lapJumpLongField = tryField(session, "jump_longest_ms", 9, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_LAP, "ms", 0);
             _maxKmh = 0.0;
             _lapMaxKmh = 0.0;
             _lapStartMs = 0;
             _laps = 0;
             if (!session.start()) {
                 session.discard();
-                _maxField = null;
-                _lapMaxField = null;
+                clearFit();
                 return;
             }
             clearTrack();
             _session = session;
-            _phase = PHASE_RECORDING;
+            _jumps = null;
+            _recordHold = false;
+            beginRecording();
         } else if (_phase == PHASE_PAUSED) {
             liveSession().start();
-            _phase = PHASE_RECORDING;
+            beginRecording();
         }
     }
 
     function pause() as Void {
         if (_phase == PHASE_RECORDING) {
             sample();
+            releaseSensors();
             liveSession().stop();
             _phase = PHASE_PAUSED;
         }
@@ -190,6 +235,12 @@ class RideSession {
             return;
         }
         sample();
+        var jumps = _jumps;
+        if (jumps != null) {
+            setNum(_lapJumpCountField, fit16(jumps.lapCount()));
+            setNum(_lapJumpAirField, jumps.lapAirMs());
+            setNum(_lapJumpLongField, fit16(jumps.lapLongestMs()));
+        }
         var lapField = _lapMaxField as FitContributor.Field;
         lapField.setData(_lapMaxKmh);
         var session = liveSession();
@@ -207,6 +258,12 @@ class RideSession {
         _lapStartMs = timerMs(Activity.getActivityInfo());
         _lapMaxKmh = 0.0;
         lapField.setData(_lapMaxKmh);
+        if (jumps != null) {
+            jumps.resetLap();
+            setNum(_lapJumpCountField, 0);
+            setNum(_lapJumpAirField, 0);
+            setNum(_lapJumpLongField, 0);
+        }
     }
 
     function openConfirm() as Void {
@@ -244,18 +301,20 @@ class RideSession {
         }
         if (_choice == CHOICE_RESUME) {
             if (liveSession().start()) {
-                _phase = PHASE_RECORDING;
+                beginRecording();
             }
             return;
         }
+        stopListen();
         if (_choice == CHOICE_SAVE) {
             liveSession().save();
         } else {
             liveSession().discard();
         }
         _session = null;
-        _maxField = null;
-        _lapMaxField = null;
+        clearFit();
+        _jumps = null;
+        _recordHold = false;
         _maxKmh = 0.0;
         _lapMaxKmh = 0.0;
         _lapStartMs = 0;
@@ -275,6 +334,8 @@ class RideSession {
             _page = PAGE_STATS;
         } else if (_page == PAGE_STATS) {
             _page = PAGE_TRACK;
+        } else if (_page == PAGE_TRACK) {
+            _page = PAGE_JUMPS;
         } else {
             _page = PAGE_RIDE;
         }
@@ -282,6 +343,8 @@ class RideSession {
 
     function previousPage() as Void {
         if (_page == PAGE_RIDE) {
+            _page = PAGE_JUMPS;
+        } else if (_page == PAGE_JUMPS) {
             _page = PAGE_TRACK;
         } else if (_page == PAGE_TRACK) {
             _page = PAGE_STATS;
@@ -304,6 +367,14 @@ class RideSession {
         if (hasFix() && speed != null && Mx.kmh(speed) > _lapMaxKmh) {
             _lapMaxKmh = Mx.kmh(speed);
             (_lapMaxField as FitContributor.Field).setData(_lapMaxKmh);
+        }
+        var lastField = _jumpLastField;
+        if (lastField != null) {
+            if (_recordHold) {
+                _recordHold = false;
+            } else {
+                lastField.setData(0);
+            }
         }
     }
 
@@ -355,7 +426,73 @@ class RideSession {
         }
         snap.trackLats = _lats;
         snap.trackLons = _lons;
+        var jumps = _jumps;
+        if (jumps != null) {
+            snap.jumpCount = jumps.count();
+            snap.jumpLastMs = jumps.lastMs();
+            snap.jumpLongestMs = jumps.longestMs();
+            snap.jumpTotalMs = jumps.totalMs();
+        }
+        snap.accelRate = _accelRate;
+        snap.gyroRate = _gyroRate;
         return snap;
+    }
+
+    function onSensors(data as Sensor.SensorData) as Void {
+        var jumps = _jumps;
+        if (_phase != PHASE_RECORDING || jumps == null) {
+            return;
+        }
+        var accel = data.accelerometerData;
+        if (accel == null) {
+            jumps.abort();
+            return;
+        }
+        var ax = accel.x;
+        var ay = accel.y;
+        var az = accel.z;
+        var n = ax.size();
+        if (ay.size() < n) {
+            n = ay.size();
+        }
+        if (az.size() < n) {
+            n = az.size();
+        }
+        var gx = null;
+        var gy = null;
+        var gz = null;
+        if (_gyroOn) {
+            var gyro = data.gyroscopeData;
+            if (gyro == null) {
+                jumps.abort();
+                return;
+            }
+            gx = gyro.x;
+            gy = gyro.y;
+            gz = gyro.z;
+            if (gx.size() != ax.size()) {
+                jumps.abort();
+                return;
+            }
+        }
+        if (n * 2 < _listenRate) {
+            jumps.abort();
+            return;
+        }
+        jumps.setSpeed(hasFix(), speedKmh());
+        for (var i = 0; i < n; i += 1) {
+            var gxv = 0;
+            var gyv = 0;
+            var gzv = 0;
+            if (gx != null && gy != null && gz != null) {
+                gxv = Math.round(gx[i]).toNumber();
+                gyv = Math.round(gy[i]).toNumber();
+                gzv = Math.round(gz[i]).toNumber();
+            }
+            if (jumps.push(ax[i], ay[i], az[i], gxv, gyv, gzv)) {
+                noteJump(jumps);
+            }
+        }
     }
 
     private function liveSession() as ActivityRecording.Session {
@@ -382,5 +519,166 @@ class RideSession {
 
     private function rounded(value as Float or Null) as Number or Null {
         return value == null ? null : Math.round(value).toNumber();
+    }
+
+    private function beginRecording() as Void {
+        _phase = PHASE_RECORDING;
+        armSensors();
+    }
+
+    private function armSensors() as Void {
+        stopListen();
+        readRates();
+        var jumps = _jumps;
+        var rate = 0;
+        var gyroOn = false;
+        if (jumps != null) {
+            rate = jumps.rate();
+            gyroOn = jumps.gyroOn();
+        } else {
+            var accel = _accelRate;
+            if (accel < 1) {
+                System.println("MX listen off");
+                return;
+            }
+            gyroOn = _gyroRate >= 25 && accel >= 25;
+            rate = accel;
+            if (gyroOn && _gyroRate < rate) {
+                rate = _gyroRate;
+            }
+            _jumps = new JumpDetector(rate, gyroOn);
+        }
+        _listenRate = rate;
+        _gyroOn = gyroOn;
+        var options = {
+            :period => 1,
+            :accelerometer => {
+                :enabled => true,
+                :sampleRate => rate
+            }
+        };
+        if (gyroOn) {
+            options[:gyroscope] = {
+                :enabled => true,
+                :sampleRate => rate
+            };
+        }
+        try {
+            Sensor.registerSensorDataListener(method(:onSensors), options);
+            _listening = true;
+            var gyroOut = 0;
+            if (gyroOn) {
+                gyroOut = rate;
+            }
+            System.println("MX listen A" + rate.toString() + " G" + gyroOut.toString());
+        } catch (ex) {
+            _listening = false;
+            System.println("MX listen failed");
+        }
+    }
+
+    private function stopListen() as Void {
+        if (!_listening) {
+            return;
+        }
+        Sensor.unregisterSensorDataListener();
+        _listening = false;
+    }
+
+    private function readRates() as Void {
+        _accelRate = 0;
+        _gyroRate = 0;
+        if (Sensor has :getMaxSampleRateForSensorType) {
+            _accelRate = Sensor.getMaxSampleRateForSensorType(:accelerometer);
+            _gyroRate = Sensor.getMaxSampleRateForSensorType(:gyroscope);
+        } else if (Sensor has :getMaxSampleRate) {
+            _accelRate = Sensor.getMaxSampleRate();
+        }
+        if (_accelRate < 0) {
+            _accelRate = 0;
+        }
+        if (_gyroRate < 0) {
+            _gyroRate = 0;
+        }
+        System.println("MX rate A" + _accelRate.toString() + " G" + _gyroRate.toString());
+    }
+
+    private function noteJump(jumps as JumpDetector) as Void {
+        setNum(_jumpCountField, fit16(jumps.count()));
+        setNum(_jumpAirField, jumps.totalMs());
+        setNum(_jumpLongField, fit16(jumps.longestMs()));
+        setNum(_jumpLastField, fit16(jumps.lastMs()));
+        var recentField = _recentField;
+        if (recentField != null) {
+            try {
+                recentField.setData(jumps.recent());
+            } catch (ex) {
+            }
+        }
+        _recordHold = true;
+        System.println("MX jump " + jumps.lastMs().toString() + " score " + jumps.lastScore().toString() + " n " + jumps.count().toString());
+    }
+
+    private function tryField(session as ActivityRecording.Session, name as String, id as Number, type as FitContributor.DataType, mesg as FitContributor.MessageType, units as String, count as Number) as FitContributor.Field or Null {
+        var field = null;
+        try {
+            if (count > 0) {
+                field = session.createField(name, id, type, {
+                    :mesgType => mesg,
+                    :units => units,
+                    :count => count
+                });
+            } else {
+                field = session.createField(name, id, type, {
+                    :mesgType => mesg,
+                    :units => units
+                });
+            }
+        } catch (ex) {
+            System.println("MX field skipped " + name);
+            field = null;
+        }
+        return field;
+    }
+
+    private function setNum(field as FitContributor.Field or Null, value as Number) as Void {
+        if (field != null) {
+            field.setData(value);
+        }
+    }
+
+    private function fit16(value as Number) as Number {
+        if (value < 0) {
+            return 0;
+        }
+        if (value > 65535) {
+            return 65535;
+        }
+        return value;
+    }
+
+    private function speedKmh() as Number {
+        var position = _position;
+        if (position == null) {
+            return 0;
+        }
+        var speed = position.speed;
+        if (speed == null) {
+            return 0;
+        }
+        return (Mx.kmh(speed) + 0.5).toNumber();
+    }
+
+    private function clearFit() as Void {
+        _maxField = null;
+        _lapMaxField = null;
+        _jumpCountField = null;
+        _jumpAirField = null;
+        _jumpLongField = null;
+        _jumpLastField = null;
+        _recentField = null;
+        _lapJumpCountField = null;
+        _lapJumpAirField = null;
+        _lapJumpLongField = null;
     }
 }

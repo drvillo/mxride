@@ -17,12 +17,14 @@ class MxRideApp extends Application.AppBase {
     }
 
     function onStart(state as Dictionary?) as Void {
+        _ride.noteRates();
         _ride.startPositioning();
         _timer.start(method(:onTick), 1000, true);
     }
 
     function onStop(state as Dictionary?) as Void {
         _timer.stop();
+        _ride.releaseSensors();
         _ride.stopPositioning();
     }
 

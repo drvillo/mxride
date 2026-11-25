@@ -1,6 +1,6 @@
 # MX Ride
 
-Watch app for motocross and desert riding. Version 1.0.4. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track of the ride.
+Watch app for motocross and desert riding. Version 1.0.5. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track, then jump count and air time.
 
 Tested in the Connect IQ 9.3.0 simulator on a fēnix 6 Pro and a fēnix 7, both 260 px. Built for every fēnix 6, 7, 8, and 9 product id in that SDK, plus fēnix E. The 416, 454, and 466 faces have no simulator skin in this environment, so they were compiled and laid out, not screenshotted.
 
@@ -14,6 +14,8 @@ Tested in the Connect IQ 9.3.0 simulator on a fēnix 6 Pro and a fēnix 7, both 
 
 ![Track page, fēnix 6 Pro](sim/fenix6pro-track.png)
 
+![Jump page, fēnix 6 Pro](sim/fenix6pro-jumps.png)
+
 ![Save screen, fēnix 6 Pro](sim/fenix6pro-save.png)
 
 ![Ready, no fix, fēnix 7](sim/fenix7-ready.png)
@@ -25,6 +27,8 @@ Tested in the Connect IQ 9.3.0 simulator on a fēnix 6 Pro and a fēnix 7, both 
 ![Stats page, fēnix 7](sim/fenix7-stats.png)
 
 ![Track page, fēnix 7](sim/fenix7-track.png)
+
+![Jump page, fēnix 7](sim/fenix7-jumps.png)
 
 ![Save screen, fēnix 7](sim/fenix7-save.png)
 
@@ -73,7 +77,7 @@ fēnix 8, fēnix E, and fēnix 9. These ids are in SDK 9.3.0 `devices.xml`. The 
 
 240, 260, and 280 keep the top-weighted stack from 1.0.3. On 416, 454, and 466 the same block is centered, the track box is inset so the corners stay inside the circle, and the GPS ring is a 3 px stroke set in from the bezel. The background stays black. There is no solid white panel. The yellow SAVE bar is only on the save screen.
 
-fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of this tree is 23308 bytes on disk for fēnix 6, with 11519 bytes of code and 1848 bytes of data (13367 total, 10.2% of 131072). The same flags produce a 17852 byte fēnix 7 `.prg` (8675 code and 2026 data, 10701 total). An unstripped build is about 126 KB because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
+fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of 1.0.5 is 30876 bytes on disk for fēnix 6, with 17992 bytes of code and 2933 bytes of data (20925 total, 16.0% of 131072). The same flags produce a 23868 byte fēnix 7 `.prg` (13463 code and 3247 data, 16710 total). An unstripped build is larger because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
 
 ## Build
 
@@ -119,7 +123,7 @@ Physical buttons. Touch is not the control.
 | --- | --- |
 | START, short | Ready: start. Recording: pause. Paused: open the save screen. Save screen: accept the highlighted row. |
 | START, long, or hold UP (MENU) | Open the save screen. A recording pauses once on the way in. |
-| UP / DOWN | Switch the three pages. On the save screen, move through RESUME, SAVE, and DISCARD. |
+| UP / DOWN | Switch the four pages. On the save screen, move through RESUME, SAVE, and DISCARD. |
 | BACK | Recording or paused: lap. Save screen: back to paused. Ready: leave the app. |
 
 The save screen lists RESUME, SAVE, DISCARD. SAVE is highlighted when it opens. While paused, the ride page shows `START: SAVE` in place of the heading, and the stats page shows it in place of the ascent line.
@@ -130,15 +134,31 @@ Page 2 is `MAX` speed, `UP` for total ascent in meters, the current lap time, an
 
 Page 3 is the track. It is a north-up line of the ride so far, scaled to the current position, with a heading arrow and a scale bar. Map tiles are not used. fēnix 6 and fēnix 6S have no map view, so every device draws the line itself. The line keeps at most 96 points and drops every other point once it fills, so a long ride stays a coarse shape of the whole loop.
 
+Page 4 is jumps. The big number is the jump count. Under it: `LAST` air time, `BEST` (the longest), and `SUM` (total air time), in tenths of a second (`1.5S`). A count of zero draws `0`. An air time that has not happened yet draws `--`. While paused, `START: SAVE` replaces the last-air line. On the ready screen that same line is the watch's max sample rate, `A100 G100` for 100 Hz accel and gyro, `A25 G0` when the gyro is off. The first three page dots stay where they were. The fourth dot sits to their right. Pages 1–3 are otherwise unchanged.
+
 Before the ride starts, the ready screen draws a ring and `GPS` / `SEARCHING` in red until there is a poor fix, then orange, then `GPS` / `READY` in green once accuracy is usable or good. The label font cannot fit `GPS SEARCHING` on one line of a 240 face, so the two words are stacked. A short vibration fires the first time the ready screen reaches that fix. START still begins a ride with no fix. While recording or paused, four bars sit on the upper right of every page: grey for no fix, one red bar for poor, two yellow bars for usable, four green bars for good.
 
 Missing GPS or heart rate draws `--`. Speed stays `--` until there is a fix. A zero is not used as a stand-in.
 
 ## What is recorded
 
-The session is sport motorcycling, name Motocross. On Connect IQ 4.1.6 and later the subsport is motocross. fēnix 6 is API 3.4, which has no motocross subsport, so that field is left off and the sport stays motorcycling. The FIT gets the GPS track, speed, distance, elevation, ascent, timer, laps, heart rate when the watch has a reading, and the device's own calorie figure. Two developer fields, both in km/h: `max_speed` on the session, `lap_max_speed` on each lap.
+The session is sport motorcycling, name Motocross. On Connect IQ 4.1.6 and later the subsport is motocross. fēnix 6 is API 3.4, which has no motocross subsport, so that field is left off and the sport stays motorcycling. The FIT gets the GPS track, speed, distance, elevation, ascent, timer, laps, heart rate when the watch has a reading, and the device's own calorie figure. Developer fields, in km/h: `max_speed` on the session, `lap_max_speed` on each lap. Jump fields: `jump_count`, `jump_air_ms`, and `jump_longest_ms` on the session and again on each lap, `jump_last_ms` on each record (the air time of a jump that ended in that second, otherwise 0), and `jump_recent_ms`, a session array of the last 32 air times. A 0 in that array is an empty slot. Two jumps in the same second share one record value; the session count is the one that does not drop a jump. There is no jump height.
 
 GPS is turned on when the app opens and stays on through pause, page changes, and save. It turns off only when the app exits. The call is `enableLocationEvents` with a continuous fix. SatIQ is requested only when `hasConfigurationSupport` says the watch has that configuration. fēnix 6 does not advertise SatIQ, so it takes the continuous path. The app does not pin multi-band max accuracy. A record is written either way, but latitude and longitude are filled in only while the watch has a fix. An indoor ride syncs an activity and Connect has nothing to draw a map from. `createSession` does not expose the recording interval, so 1 Hz versus smart recording stays with the device. The calorie number is the device algorithm. On a motorcycling activity that can be a poor estimate, because the bike is doing the work.
+
+## Jumps
+
+The app turns the accelerometer on when a ride starts, at the watch's max rate from `getMaxSampleRateForSensorType`. The gyro comes on at that same rate when its max is at least 25 Hz, and the shared rate is the lower of the two so the samples pair. A batch that is short, or whose accel and gyro lengths disagree, drops the open jump instead of inventing samples. The app also prints `MX rate A<accel> G<gyro>` when it opens and again when recording starts.
+
+A jump is a quiet stretch. Smoothed acceleration has to stay under 0.45 g for 3 samples below 50 Hz, or 5 samples at 50 Hz and above. With the gyro on, a softer dip under 0.70 g counts when the gyro is also turning (80 deg/s). It ends once the smoothed magnitude is back over 0.80 g. Air time is that stretch, in milliseconds. It has to last 300 ms, or 250 ms if the gyro saw that rotation during the air. A landing spike of 2 g or more inside the next 200 ms keeps an air of 200–400 ms that missed the floor. Anything shorter is dropped, which is what a whoop usually is. After a jump the next one cannot start for 300 ms. Under 8 km/h with a GPS fix the jump is rejected. With no fix it still counts. Pausing throws away an open jump and keeps the totals.
+
+The same gates run in `scripts/jump_harness.py` on made-up traces. That is not a wrist recording. `python3 scripts/jump_harness.py` prints one line per case.
+
+At 25 Hz, accelerometer only, a clean 0.3 s air was read as 240 ms (−60 ms) and kept because of the landing spike. Clean 0.5 / 1.0 / 1.5 s airs were read as 400 / 920 / 1440 ms (−100 / −80 / −60 ms). Six 0.15 s whoops, a braking bump with no quiet gap, and 20 s of 1 g plus a 70 Hz vibration were not counted. The same vibration with a 1.0 s freefall in the middle was counted at 920 ms. The 1.0 s air at 5 km/h with a fix was rejected. The same air with no fix was counted. A 0.8 s dip that only fell to 0.60 g was missed with the gyro off and counted at 720 ms with a gyro pulse.
+
+At 100 Hz the clean airs were 270 / 470 / 970 / 1470 ms, about −30 ms, and the jump inside the vibration was −40 ms. The whoops, the bump, and the plain vibration were still not counted.
+
+Those errors are the synthetic traces, where freefall is a hard cut to 0 g. On a wrist the plan's range is wider, and it is an extrapolation, not a measurement: for airs of 0.5 s and up, expect something like 80–200 ms of error at 25 Hz and 40–120 ms at 100 Hz, of which about 30–80 ms is the arms and the suspension and does not shrink with sample rate. Detection of those longer jumps is planned around 70–90% on accel alone, 75–92% with the gyro, and 85–95% at 100 Hz with the gyro. False jumps are planned around one every few minutes of trail, fewer with the gyro. A real fēnix 6 may report 25 Hz. The 9.3.0 simulator on fēnix 6 Pro and fēnix 7 reported `A100 G100` and drew that on the jump page. It does not play a high-rate accel trace, so the screenshots show a count of 0. At 25 Hz a 70 Hz engine note folds into the same band as freefall, and the short smoother cannot separate them.
 
 ## Fonts
 

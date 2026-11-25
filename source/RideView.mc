@@ -42,8 +42,10 @@ class RideView extends WatchUi.View {
             drawRide(dc, w, h, digits, labels);
         } else if (_snap.page == PAGE_STATS) {
             drawStats(dc, w, h, digits, labels);
-        } else {
+        } else if (_snap.page == PAGE_TRACK) {
             drawTrack(dc, w, h, labels);
+        } else {
+            drawJumps(dc, w, h, digits, labels);
         }
         drawGpsBars(dc, w, h);
         drawDots(dc, w, h);
@@ -120,6 +122,30 @@ class RideView extends WatchUi.View {
         }
         y += step;
         text(dc, w / 2, y, labels, "LAPS " + snap.laps.toString(), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
+    private function drawJumps(dc as Dc, w as Number, h as Number, digits as FontResource, labels as FontResource) as Void {
+        var snap = _snap;
+        var step = lineStep(h);
+        var digitH = dc.getFontHeight(digits);
+        var y = lineTop(h, step, digitH);
+        text(dc, w / 2, y, labels, phaseWord(snap.phase), phaseColor(snap.phase), Graphics.TEXT_JUSTIFY_CENTER);
+        y += step;
+        text(dc, w / 2, y, labels, "JUMPS", Graphics.COLOR_LT_GRAY, Graphics.TEXT_JUSTIFY_CENTER);
+        y += step;
+        text(dc, w / 2, y, digits, snap.jumpCount.toString(), Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
+        y += digitH + 4;
+        if (snap.phase == PHASE_PAUSED) {
+            text(dc, w / 2, y, labels, "START: SAVE", Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
+        } else if (snap.phase == PHASE_READY) {
+            text(dc, w / 2, y, labels, Mx.formatRate(snap.accelRate, snap.gyroRate), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        } else {
+            text(dc, w / 2, y, labels, "LAST " + Mx.formatAir(snap.jumpLastMs), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        }
+        y += step;
+        text(dc, w / 2, y, labels, "BEST " + Mx.formatAir(snap.jumpLongestMs), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        y += step;
+        text(dc, w / 2, y, labels, "SUM " + Mx.formatAir(snap.jumpTotalMs), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     private function drawTrack(dc as Dc, w as Number, h as Number, labels as FontResource) as Void {
@@ -305,6 +331,8 @@ class RideView extends WatchUi.View {
         dc.fillRectangle(x + 12, y, 7, 7);
         dc.setColor(_snap.page == PAGE_TRACK ? Graphics.COLOR_YELLOW : Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x + 24, y, 7, 7);
+        dc.setColor(_snap.page == PAGE_JUMPS ? Graphics.COLOR_YELLOW : Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.fillRectangle(x + 36, y, 7, 7);
     }
 
     private function drawGpsRing(dc as Dc, w as Number, h as Number) as Void {
