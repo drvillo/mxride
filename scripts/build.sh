@@ -7,13 +7,16 @@ MONKEYC="$SDK/bin/monkeyc"
 KEY="$ROOT/bin/developer_key.der"
 MODE="beta"
 RELEASE=1
+GENERATE_KEY=0
+PEM="$ROOT/bin/developer_key.pem"
 
 for arg in "$@"; do
 	case "$arg" in
 		--public) MODE="public" ;;
 		--debug) RELEASE=0 ;;
+		--generate-key) GENERATE_KEY=1 ;;
 		*)
-			printf 'usage: %s [--public] [--debug]\n' "$0" >&2
+			printf 'usage: %s [--public] [--debug] [--generate-key]\n' "$0" >&2
 			exit 1
 			;;
 	esac
@@ -33,13 +36,27 @@ if [[ ! -x "$MONKEYC" ]]; then
 fi
 
 mkdir -p "$ROOT/bin"
-python3 "$ROOT/scripts/gen_fonts.py"
-python3 "$ROOT/scripts/import-sdk-devices.py"
+
+# Never mint a key as a side effect of building. A missing key is an error.
+# --generate-key creates bin/developer_key.pem and bin/developer_key.der, and
+# refuses if either file is already there.
+if [[ "$GENERATE_KEY" -eq 1 ]]; then
+	if [[ -e "$KEY" || -e "$PEM" ]]; then
+		printf 'refusing to overwrite an existing developer key\n' >&2
+		exit 1
+	fi
+	openssl genrsa -out "$PEM" 4096
+	openssl pkcs8 -topk8 -inform PEM -outform DER -in "$PEM" -out "$KEY" -nocrypt
+fi
 
 if [[ ! -f "$KEY" ]]; then
-	openssl genrsa -out "$ROOT/bin/developer_key.pem" 4096
-	openssl pkcs8 -topk8 -inform PEM -outform DER -in "$ROOT/bin/developer_key.pem" -out "$KEY" -nocrypt
+	printf 'developer key not found: %s\n' "$KEY" >&2
+	printf 'Copy the existing key to that path. This script does not create one unless you pass --generate-key.\n' >&2
+	exit 1
 fi
+
+python3 "$ROOT/scripts/gen_fonts.py"
+python3 "$ROOT/scripts/import-sdk-devices.py"
 
 # The public listing is a second app. Same devices and version, different id.
 # Fail if the two manifests drift apart by anything other than that id.

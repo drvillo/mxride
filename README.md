@@ -93,11 +93,11 @@ The build script then writes compiler profiles for the 8, E, and 9 ids from the 
 ./scripts/build.sh
 ```
 
-That passes `-r` and `-O 2` to every `monkeyc` invocation, including the `--public` package. `-r` strips the symbol table. `-O 2` is the compiler's fast optimizer. `./scripts/build.sh --debug` leaves both off and matches the older unstripped build. `--public` and `--debug` can be combined.
+That passes `-r` and `-O 2` to every `monkeyc` invocation, including the `--public` package. `-r` strips the symbol table. `-O 2` is the compiler's fast optimizer. `./scripts/build.sh --debug` leaves both off and matches the older unstripped build. `--public` and `--debug` can be combined. `--generate-key` creates `bin/developer_key.der` only when that file and `bin/developer_key.pem` are both absent. A build with no key stops. It does not write a new key on its own, and `--generate-key` will not replace one that is already there.
 
 Outputs `bin/mxride-<device>.prg` for every id in the tables above, plus `bin/mxride.iq`. That package keeps the beta app id `A7C3E91B4D2F4A6E8B1C0D5E7F908172`.
 
-Garmin will not take a beta app public. The public listing is a second app, same version and devices, app id `8C03D4377798050D9445D7B0820FB52A`, same signing key.
+Garmin will not take a beta app public. The public listing is a new app, same name (MX Ride), version, and devices, app id `97044CB1ADC84D52B353125C4B120D7D`. The beta id `A7C3E91B4D2F4A6E8B1C0D5E7F908172` was signed with a developer key that is gone, so that store listing cannot take a 1.0.5 update. 1.0.5, beta and public, is signed with the key in `bin/developer_key.der`.
 
 ```
 ./scripts/build.sh --public
@@ -105,7 +105,7 @@ Garmin will not take a beta app public. The public listing is a second app, same
 
 That writes `bin/mxride-public.iq` from `manifest-public.xml`. It does not rebuild the beta `.prg` files or `bin/mxride.iq`. The two manifests must match except for the app id, and the script refuses to build when they do not.
 
-The first run mints `bin/developer_key.der` with openssl when that file is missing. The key and `bin/developer_key.pem` are gitignored. Builds (`bin/*.prg` and `bin/*.iq`) are not tracked in git either: run `./scripts/build.sh` locally, or grab a signed binary from the [GitHub Releases page](https://github.com/drvillo/mxride/releases). The released `.prg` files were signed with a key that is not in this repo. To reproduce the same signatures locally you need that key; a different key is a different signature, so remove the old sideload from the watch before installing a locally built one.
+`bin/developer_key.der` and `bin/developer_key.pem` are gitignored and are not created during a normal build. Builds (`bin/*.prg` and `bin/*.iq`) are not tracked in git either: run `./scripts/build.sh` locally, or grab a signed binary from the [GitHub Releases page](https://github.com/drvillo/mxride/releases). The 1.0.4 releases were signed with a different key. A 1.0.5 package will not update those listings.
 
 ## Sideload
 
