@@ -6,13 +6,24 @@ SDK="${CIQ_SDK:-$HOME/.Garmin/ConnectIQ/Sdks/connectiq-sdk-9.3.0}"
 MONKEYC="$SDK/bin/monkeyc"
 KEY="$ROOT/bin/developer_key.der"
 MODE="beta"
+RELEASE=1
 
-if [[ $# -gt 1 || ( $# -eq 1 && "$1" != "--public" ) ]]; then
-	printf 'usage: %s [--public]\n' "$0" >&2
-	exit 1
-fi
-if [[ "${1:-}" == "--public" ]]; then
-	MODE="public"
+for arg in "$@"; do
+	case "$arg" in
+		--public) MODE="public" ;;
+		--debug) RELEASE=0 ;;
+		*)
+			printf 'usage: %s [--public] [--debug]\n' "$0" >&2
+			exit 1
+			;;
+	esac
+done
+
+# Release strips the symbol table (-r) and runs the fast optimizer (-O 2).
+# --debug keeps the previous unstripped, default-optimization build.
+MONKEYC_FLAGS=(-w -l 2)
+if [[ "$RELEASE" -eq 1 ]]; then
+	MONKEYC_FLAGS+=(-r -O 2)
 fi
 
 if [[ ! -x "$MONKEYC" ]]; then
@@ -80,14 +91,14 @@ devices=(
 )
 
 if [[ "$MODE" == "public" ]]; then
-	"$MONKEYC" -e -f "$ROOT/monkey-public.jungle" -o "$ROOT/bin/mxride-public.iq" -y "$KEY" -w -l 2
+	"$MONKEYC" -e -f "$ROOT/monkey-public.jungle" -o "$ROOT/bin/mxride-public.iq" -y "$KEY" "${MONKEYC_FLAGS[@]}"
 	printf 'built %s\n' "$ROOT/bin/mxride-public.iq"
 	exit 0
 fi
 
 for device in "${devices[@]}"; do
-	"$MONKEYC" -f "$ROOT/monkey.jungle" -o "$ROOT/bin/mxride-${device}.prg" -y "$KEY" -d "$device" -w -l 2
+	"$MONKEYC" -f "$ROOT/monkey.jungle" -o "$ROOT/bin/mxride-${device}.prg" -y "$KEY" -d "$device" "${MONKEYC_FLAGS[@]}"
 done
 
-"$MONKEYC" -e -f "$ROOT/monkey.jungle" -o "$ROOT/bin/mxride.iq" -y "$KEY" -w -l 2
+"$MONKEYC" -e -f "$ROOT/monkey.jungle" -o "$ROOT/bin/mxride.iq" -y "$KEY" "${MONKEYC_FLAGS[@]}"
 printf 'built %s\n' "$ROOT/bin"

@@ -73,7 +73,7 @@ fēnix 8, fēnix E, and fēnix 9. These ids are in SDK 9.3.0 `devices.xml`. The 
 
 240, 260, and 280 keep the top-weighted stack from 1.0.3. On 416, 454, and 466 the same block is centered, the track box is inset so the corners stay inside the circle, and the GPS ring is a 3 px stroke set in from the bezel. The background stays black. There is no solid white panel. The yellow SAVE bar is only on the save screen.
 
-fēnix 6 and 6S have a 128 KB watch-app limit. The 1.0.4 fēnix 6 `.prg` is 125964 bytes. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
+fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of this tree is 23308 bytes on disk for fēnix 6, with 11519 bytes of code and 1848 bytes of data (13367 total, 10.2% of 131072). The same flags produce a 17852 byte fēnix 7 `.prg` (8675 code and 2026 data, 10701 total). An unstripped build is about 126 KB because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
 
 ## Build
 
@@ -88,6 +88,8 @@ The build script then writes compiler profiles for the 8, E, and 9 ids from the 
 ```
 ./scripts/build.sh
 ```
+
+That passes `-r` and `-O 2` to every `monkeyc` invocation, including the `--public` package. `-r` strips the symbol table. `-O 2` is the compiler's fast optimizer. `./scripts/build.sh --debug` leaves both off and matches the older unstripped build. `--public` and `--debug` can be combined.
 
 Outputs `bin/mxride-<device>.prg` for every id in the tables above, plus `bin/mxride.iq`. That package keeps the beta app id `A7C3E91B4D2F4A6E8B1C0D5E7F908172`.
 
