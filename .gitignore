@@ -1,10 +1,51 @@
-bin/*.der
-bin/*.pem
-bin/*.key
-bin/*.debug.xml
+# Garmin Connect IQ build outputs
+bin/*.iq
+bin/*.prg
+bin/*.prg.debug.xml
+bin/*-settings.json
+bin/*.mir
 bin/gen/
 bin/mir/
 bin/internal-mir/
 bin/external-mir/
+gen/
+*.mir
+*.prg
+*.prg.debug.xml
+
+# Signing keys and developer credentials — never commit
+bin/*.der
+bin/*.pem
+bin/*.key
+bin/*.p12
+bin/*.pfx
 *.der
 *.pem
+*.key
+*.p12
+*.pfx
+developer_key*
+
+# Debug XML anywhere
+*.debug.xml
+
+# Simulator / runtime output
+*.fit
+*.FIT
+
+# Logs and temp
+*.log
+*.tmp
+tmp/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor cruft
+*.swp
+*.swo
+*.swn
+*~
+.idea/
