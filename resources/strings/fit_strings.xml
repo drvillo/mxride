@@ -1,0 +1,59 @@
+<strings>
+    <string id="fit_max_speed_label">Max speed</string>
+    <string id="fit_max_speed_chart">Max speed</string>
+    <string id="fit_lap_max_speed_label">Lap max speed</string>
+    <string id="fit_kmh_units">km/h</string>
+
+    <string id="fit_jump_count_label">Jumps</string>
+    <string id="fit_jump_air_label">Air time</string>
+    <string id="fit_jump_long_label">Longest air</string>
+    <string id="fit_jump_last_label">Last air</string>
+    <string id="fit_jump_last_chart">Last jump air</string>
+    <string id="fit_jump_recent_label">Recent airs</string>
+    <string id="fit_ms_units">ms</string>
+    <string id="fit_count_units">count</string>
+
+    <string id="fit_diag_samples_label">Accel samples</string>
+    <string id="fit_diag_samples_chart">Accel samples / sec</string>
+    <string id="fit_diag_gps_label">GPS updates</string>
+    <string id="fit_diag_gps_chart">GPS updates / sec</string>
+    <string id="fit_diag_a_peak_label">Peak |a|</string>
+    <string id="fit_diag_a_peak_chart">Peak |a| (mg)</string>
+    <string id="fit_diag_a_min_label">Min |a|</string>
+    <string id="fit_diag_a_min_chart">Min |a| (mg)</string>
+    <string id="fit_diag_g_peak_label">Peak |gyro|</string>
+    <string id="fit_diag_g_peak_chart">Peak |gyro| (dps)</string>
+    <string id="fit_diag_flags_label">Diag flags</string>
+    <string id="fit_diag_flags_chart">Diag flag mask</string>
+
+    <string id="fit_mg_units">mg</string>
+    <string id="fit_dps_units">dps</string>
+    <string id="fit_hz_units">Hz</string>
+    <string id="fit_s_units">s</string>
+    <string id="fit_mask_units">mask</string>
+
+    <string id="fit_diag_accel_cfg_label">Accel rate (configured)</string>
+    <string id="fit_diag_gyro_cfg_label">Gyro rate (configured)</string>
+    <string id="fit_diag_accel_actual_label">Accel rate (actual)</string>
+    <string id="fit_diag_gyro_actual_label">Gyro rate (actual)</string>
+    <string id="fit_diag_gps_actual_label">GPS rate (actual)</string>
+    <string id="fit_diag_batches_label">Sensor batches</string>
+    <string id="fit_diag_record_sec_label">Record seconds</string>
+    <string id="fit_diag_ax_lo_label">Accel X min</string>
+    <string id="fit_diag_ax_hi_label">Accel X max</string>
+    <string id="fit_diag_ay_lo_label">Accel Y min</string>
+    <string id="fit_diag_ay_hi_label">Accel Y max</string>
+    <string id="fit_diag_az_lo_label">Accel Z min</string>
+    <string id="fit_diag_az_hi_label">Accel Z max</string>
+    <string id="fit_diag_gx_lo_label">Gyro X min</string>
+    <string id="fit_diag_gx_hi_label">Gyro X max</string>
+    <string id="fit_diag_gy_lo_label">Gyro Y min</string>
+    <string id="fit_diag_gy_hi_label">Gyro Y max</string>
+    <string id="fit_diag_gz_lo_label">Gyro Z min</string>
+    <string id="fit_diag_gz_hi_label">Gyro Z max</string>
+    <string id="fit_diag_accel_clip_label">Accel near-cap samples</string>
+    <string id="fit_diag_accel_wrap_label">Accel sign-wrap events</string>
+    <string id="fit_diag_gyro_clip_label">Gyro near-cap samples</string>
+    <string id="fit_diag_a_hist_label">|a| histogram (0.5g bins)</string>
+    <string id="fit_diag_g_hist_label">|gyro| histogram (250 dps)</string>
+</strings>
