@@ -1,0 +1,162 @@
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <fitContributions>
+        <!-- Session fields. Match RideSession.createField(..., id, ...). -->
+        <fitField id="0"
+                  displayInActivitySummary="true"
+                  sortOrder="0"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_speed_label"
+                  unitLabel="@Strings.fit_kmh_units" />
+
+        <fitField id="2"
+                  displayInActivitySummary="true"
+                  sortOrder="10"
+                  dataLabel="@Strings.fit_jump_count_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="3"
+                  displayInActivitySummary="true"
+                  sortOrder="11"
+                  dataLabel="@Strings.fit_jump_air_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="4"
+                  displayInActivitySummary="true"
+                  sortOrder="12"
+                  dataLabel="@Strings.fit_jump_long_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="6"
+                  displayInActivitySummary="true"
+                  sortOrder="13"
+                  dataLabel="@Strings.fit_jump_recent_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <!-- Lap fields. -->
+        <fitField id="1"
+                  displayInActivityLaps="true"
+                  sortOrder="20"
+                  precision="2"
+                  dataLabel="@Strings.fit_lap_max_speed_label"
+                  unitLabel="@Strings.fit_kmh_units" />
+
+        <fitField id="7"
+                  displayInActivityLaps="true"
+                  sortOrder="21"
+                  dataLabel="@Strings.fit_jump_count_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="8"
+                  displayInActivityLaps="true"
+                  sortOrder="22"
+                  dataLabel="@Strings.fit_jump_air_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="9"
+                  displayInActivityLaps="true"
+                  sortOrder="23"
+                  dataLabel="@Strings.fit_jump_long_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <!-- Record field, graphed under the activity's elevation / speed curves. -->
+        <fitField id="5"
+                  displayInChart="true"
+                  sortOrder="30"
+                  chartTitle="@Strings.fit_jump_last_chart"
+                  dataLabel="@Strings.fit_jump_last_label"
+                  unitLabel="@Strings.fit_ms_units"
+                  fillColor="#FFAA00" />
+
+        <!-- G-force record fields, per-second peaks. Plotted on the per-record
+             charts. g_vert is the signed ring value (vertical load - 1 g),
+             g_lat is signed lateral (+ right), g_lon is signed longitudinal
+             (+ accel, - braking). -->
+        <fitField id="12"
+                  displayInChart="true"
+                  sortOrder="31"
+                  precision="2"
+                  chartTitle="@Strings.fit_g_vert_chart"
+                  dataLabel="@Strings.fit_g_vert_label"
+                  unitLabel="@Strings.fit_g_units"
+                  fillColor="#00FF00" />
+        <fitField id="10"
+                  displayInChart="true"
+                  sortOrder="32"
+                  precision="2"
+                  chartTitle="@Strings.fit_g_lat_chart"
+                  dataLabel="@Strings.fit_g_lat_label"
+                  unitLabel="@Strings.fit_g_units"
+                  fillColor="#FFAA00" />
+        <fitField id="11"
+                  displayInChart="true"
+                  sortOrder="33"
+                  precision="2"
+                  chartTitle="@Strings.fit_g_lon_chart"
+                  dataLabel="@Strings.fit_g_lon_label"
+                  unitLabel="@Strings.fit_g_units"
+                  fillColor="#FF00FF" />
+
+        <!-- G-force session summaries. -->
+        <fitField id="13"
+                  displayInActivitySummary="true"
+                  sortOrder="40"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_land_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="14"
+                  displayInActivitySummary="true"
+                  sortOrder="41"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_corner_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="15"
+                  displayInActivitySummary="true"
+                  sortOrder="42"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_brake_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="16"
+                  displayInActivitySummary="true"
+                  sortOrder="43"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_accel_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="17"
+                  displayInActivitySummary="true"
+                  sortOrder="44"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_combined_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="18"
+                  displayInActivitySummary="true"
+                  sortOrder="45"
+                  dataLabel="@Strings.fit_imu_ok_pct_label"
+                  unitLabel="@Strings.fit_pct_units" />
+
+        <!-- G-force lap summaries. -->
+        <fitField id="19"
+                  displayInActivityLaps="true"
+                  sortOrder="50"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_land_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="20"
+                  displayInActivityLaps="true"
+                  sortOrder="51"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_corner_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="21"
+                  displayInActivityLaps="true"
+                  sortOrder="52"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_brake_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+        <fitField id="22"
+                  displayInActivityLaps="true"
+                  sortOrder="53"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_accel_g_label"
+                  unitLabel="@Strings.fit_g_units" />
+    </fitContributions>
+</resources>

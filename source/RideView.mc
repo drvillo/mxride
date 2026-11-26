@@ -53,34 +53,30 @@ class RideView extends WatchUi.View {
 
     private function drawRide(dc as Dc, w as Number, h as Number, digits as FontResource, labels as FontResource) as Void {
         var snap = _snap;
+        if (snap.phase == PHASE_RECORDING || snap.phase == PHASE_PAUSED) {
+            drawGRing(dc, w, h, snap);
+        }
         var step = lineStep(h);
         var digitH = dc.getFontHeight(digits);
-        var y = lineTop(h, step, digitH);
+        var y = rideTop(h, step, digitH);
         text(dc, w / 2, y, labels, phaseWord(snap.phase), phaseColor(snap.phase), Graphics.TEXT_JUSTIFY_CENTER);
         y += step;
         text(dc, w / 2, y, digits, Mx.formatNumber(snap.speedKmh), Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
         y += digitH + 4;
-        if (snap.phase == PHASE_PAUSED) {
-            text(dc, w / 2, y, labels, "START: SAVE", Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
-            y += step;
-            text(dc, w / 2, y, labels, "A " + Mx.formatNumber(snap.altitudeM), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
-        } else if (snap.phase == PHASE_READY) {
+        if (snap.phase == PHASE_READY) {
             var color = gpsColor(snap.gpsAccuracy);
             text(dc, w / 2, y, labels, "GPS", color, Graphics.TEXT_JUSTIFY_CENTER);
             y += step;
             text(dc, w / 2, y, labels, gpsDetail(snap.gpsAccuracy), color, Graphics.TEXT_JUSTIFY_CENTER);
-        } else {
-            var course = "--";
-            if (snap.headingDeg != null) {
-                var deg = snap.headingDeg as Number;
-                course = deg.toString() + " " + Mx.cardinal(deg);
-                drawNeedle(dc, w / 2 + 68, y + 10, 11, deg);
-            }
-            text(dc, w / 2, y, labels, course, Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
             y += step;
-            text(dc, w / 2, y, labels, "A " + Mx.formatNumber(snap.altitudeM), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+            // HR is the only other live value until the ride starts.
+            var hrReadyColor = Graphics.COLOR_WHITE;
+            if (snap.heartRate != null) {
+                hrReadyColor = zoneColor(snap.hrZone);
+            }
+            text(dc, w / 2, y, labels, "H " + Mx.formatNumber(snap.heartRate), hrReadyColor, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
         }
-        y += step;
         var hrColor = Graphics.COLOR_WHITE;
         if (snap.heartRate != null) {
             hrColor = zoneColor(snap.hrZone);
@@ -93,6 +89,40 @@ class RideView extends WatchUi.View {
             distText = (dist / 1000.0).format("%.1f");
         }
         text(dc, w / 2, y, labels, Mx.formatTimer(snap.timerMs) + " " + distText, Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        y += step;
+        drawGLine(dc, w, y, labels, snap);
+    }
+
+    private function drawGLine(dc as Dc, w as Number, y as Number, labels as FontResource, snap as Snapshot) as Void {
+        if (snap.phase == PHASE_PAUSED) {
+            text(dc, w / 2, y, labels, "START: SAVE", Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+        // Air time wins over the G line while a jump is in progress.
+        if (snap.airLiveMs > 0) {
+            var tenths = (snap.airLiveMs + 50) / 100;
+            var whole = tenths / 10;
+            var frac = tenths % 10;
+            var airText = "AIR " + whole.toString() + "." + frac.toString();
+            text(dc, w / 2, y, labels, airText, Graphics.COLOR_RED, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+        // LAND takes over for 3 s after a landing window closes, showing
+        // the peak |a| of that landing. After 3 s we fall back to the ring
+        // value.
+        if (snap.landShowMs > 0 && snap.landPeak > 0.0) {
+            var landText = "LAND " + snap.landPeak.format("%.1f");
+            text(dc, w / 2, y, labels, landText, Graphics.COLOR_GREEN, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+        var ringText = Mx.formatG(snap.ringG) + " G";
+        var ringColor = Graphics.COLOR_WHITE;
+        if (snap.ringG >= 0.1) {
+            ringColor = Graphics.COLOR_GREEN;
+        } else if (snap.ringG <= -0.1) {
+            ringColor = Graphics.COLOR_RED;
+        }
+        text(dc, w / 2, y, labels, ringText, ringColor, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     private function drawStats(dc as Dc, w as Number, h as Number, digits as FontResource, labels as FontResource) as Void {
@@ -110,18 +140,33 @@ class RideView extends WatchUi.View {
             text(dc, w / 2, y, labels, "START: SAVE", Graphics.COLOR_YELLOW, Graphics.TEXT_JUSTIFY_CENTER);
             y += step;
             text(dc, w / 2, y, labels, "LAP " + Mx.formatTimer(snap.lapMs), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
-        } else if (snap.phase == PHASE_READY) {
+            y += step;
+            text(dc, w / 2, y, labels, "LAPS " + snap.laps.toString(), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
+        }
+        if (snap.phase == PHASE_READY) {
             var color = gpsColor(snap.gpsAccuracy);
             text(dc, w / 2, y, labels, "GPS", color, Graphics.TEXT_JUSTIFY_CENTER);
             y += step;
             text(dc, w / 2, y, labels, gpsDetail(snap.gpsAccuracy), color, Graphics.TEXT_JUSTIFY_CENTER);
-        } else {
-            text(dc, w / 2, y, labels, "UP " + Mx.formatNumber(snap.ascentM), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
             y += step;
-            text(dc, w / 2, y, labels, "LAP " + Mx.formatTimer(snap.lapMs), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+            text(dc, w / 2, y, labels, "LAPS " + snap.laps.toString(), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+            return;
         }
+        // Heading and altitude moved here from the main page in 1.0.6 to
+        // make room for the G-ring. UP (total ascent) and LAP were the two
+        // extras here before; LAP keeps its row, UP folds into the altitude
+        // row because the two are closely related.
+        var course = "--";
+        if (snap.headingDeg != null) {
+            var deg = snap.headingDeg as Number;
+            course = deg.toString() + " " + Mx.cardinal(deg);
+        }
+        text(dc, w / 2, y, labels, course, Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
         y += step;
-        text(dc, w / 2, y, labels, "LAPS " + snap.laps.toString(), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        text(dc, w / 2, y, labels, "A " + Mx.formatNumber(snap.altitudeM) + " / UP " + Mx.formatNumber(snap.ascentM), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
+        y += step;
+        text(dc, w / 2, y, labels, "LAP " + Mx.formatTimer(snap.lapMs) + " / " + snap.laps.toString(), Graphics.COLOR_WHITE, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     private function drawJumps(dc as Dc, w as Number, h as Number, digits as FontResource, labels as FontResource) as Void {
@@ -324,6 +369,13 @@ class RideView extends WatchUi.View {
             return;
         }
         var y = h - 14;
+        // The G-ring on the main page eats the bottom bezel. Move the dots
+        // up so they sit inside the ring instead of under it. On other
+        // pages the dots keep their old position (no ring there).
+        if (_snap.page == PAGE_RIDE && (_snap.phase == PHASE_RECORDING || _snap.phase == PHASE_PAUSED)) {
+            var side = w < h ? w : h;
+            y = h / 2 + side / 2 - ringOuterInset(side) - ringWidthFor(side) - 10;
+        }
         var x = w / 2 - 16;
         dc.setColor(_snap.page == PAGE_RIDE ? Graphics.COLOR_YELLOW : Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x, y, 7, 7);
@@ -333,6 +385,191 @@ class RideView extends WatchUi.View {
         dc.fillRectangle(x + 24, y, 7, 7);
         dc.setColor(_snap.page == PAGE_JUMPS ? Graphics.COLOR_YELLOW : Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x + 36, y, 7, 7);
+    }
+
+    // Per-size tables keep the ring geometry readable across 240, 260,
+    // 280, 416, 454 and 466 faces. The bitmap fonts are fixed, so these
+    // table values were picked against the mockups and the existing layout.
+    private function ringWidthFor(side as Number) as Number {
+        if (side >= 450) {
+            return 14;
+        }
+        if (side >= 400) {
+            return 12;
+        }
+        if (side >= 280) {
+            return 11;
+        }
+        if (side >= 260) {
+            return 10;
+        }
+        return 9;
+    }
+
+    private function ringOuterInset(side as Number) as Number {
+        if (side >= 400) {
+            return 10;
+        }
+        return 3;
+    }
+
+    private function rideTop(h as Number, step as Number, digitH as Number) as Number {
+        // The ring takes the top and bottom bezels, so the content stack
+        // on the ride page lives in a slightly smaller box than the other
+        // pages. 10 px above REC fits the 260 px mockup.
+        if (h < 260) {
+            return 14;
+        }
+        if (h < 400) {
+            return 14;
+        }
+        var block = step + digitH + 4 + step * 3;
+        var y = (h - block) / 2;
+        if (y < 36) {
+            return 36;
+        }
+        return y;
+    }
+
+    private function drawGRing(dc as Dc, w as Number, h as Number, snap as Snapshot) as Void {
+        var side = w < h ? w : h;
+        var outer = side / 2 - ringOuterInset(side);
+        var ringWidth = ringWidthFor(side);
+        var midR = outer - ringWidth / 2;
+        var cx = w / 2;
+        var cy = h / 2;
+        // Base unlit ring: 60 short arcs (30 per side) so the segmented look
+        // of the mockup is preserved and the lit arcs can overdraw a single
+        // segment cleanly.
+        dc.setPenWidth(ringWidth);
+        drawSegments(dc, cx, cy, midR, true, 30, Graphics.COLOR_DK_GRAY);
+        drawSegments(dc, cx, cy, midR, false, 30, Graphics.COLOR_DK_GRAY);
+        // Lit segments. 0.1 g per step on the compression side (up to +3 g),
+        // 0.033 g per step on the unloading side (down to -1 g = free fall).
+        // Only the current second's ring value drives the lit count; the
+        // 3 s peak-hold tick carries the earlier reading above the
+        // fresh-lit segments.
+        var instPos = snap.ringG > 0.0 ? (snap.ringG * 10.0 + 0.5).toNumber() : 0;
+        if (instPos < 0) {
+            instPos = 0;
+        }
+        if (instPos > 30) {
+            instPos = 30;
+        }
+        var instNeg = snap.ringG < 0.0 ? (-snap.ringG / 0.0333 + 0.5).toNumber() : 0;
+        if (instNeg < 0) {
+            instNeg = 0;
+        }
+        if (instNeg > 30) {
+            instNeg = 30;
+        }
+        drawSegments(dc, cx, cy, midR, true, instPos, Graphics.COLOR_GREEN);
+        drawSegments(dc, cx, cy, midR, false, instNeg, Graphics.COLOR_RED);
+        // Peak-hold ticks. White, radial, sitting on the outside edge of
+        // the ring.
+        dc.setPenWidth(2);
+        if (snap.peakHoldPos > 0.01) {
+            drawTick(dc, cx, cy, outer, ringWidth, snap.peakHoldPos, true, Graphics.COLOR_WHITE);
+        }
+        if (snap.peakHoldNeg < -0.01) {
+            drawTick(dc, cx, cy, outer, ringWidth, -snap.peakHoldNeg, false, Graphics.COLOR_WHITE);
+        }
+        // Zero mark at 12.
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, cy - outer - 1, cx, cy - outer + ringWidth + 2);
+        // Scale notches at +1 g, +2 g and -0.5 g.
+        drawNotch(dc, cx, cy, outer, ringWidth, 1.0, true);
+        drawNotch(dc, cx, cy, outer, ringWidth, 2.0, true);
+        drawNotch(dc, cx, cy, outer, ringWidth, 0.5 / 0.0333 * 0.1, false);
+        // Inner yellow arc for horizontal G direction (felt-force).
+        drawHArc(dc, cx, cy, midR - ringWidth / 2 - 10, snap.latG, snap.lonG);
+        dc.setPenWidth(1);
+    }
+
+    // Draw |count| segments of 5° width on the positive (right) or negative
+    // (left) half-ring. Segments are 6° apart, with a 1° gap.
+    private function drawSegments(dc as Dc, cx as Number, cy as Number, r as Number, positive as Boolean, count as Number, color as Number) as Void {
+        if (count <= 0) {
+            return;
+        }
+        if (count > 30) {
+            count = 30;
+        }
+        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+        for (var i = 0; i < count; i++) {
+            var startDeg = 0.0;
+            var endDeg = 0.0;
+            if (positive) {
+                startDeg = 89.5 - 6.0 * i;
+                endDeg = 84.5 - 6.0 * i;
+                dc.drawArc(cx, cy, r, Graphics.ARC_CLOCKWISE, startDeg, endDeg);
+            } else {
+                startDeg = 90.5 + 6.0 * i;
+                endDeg = 95.5 + 6.0 * i;
+                dc.drawArc(cx, cy, r, Graphics.ARC_COUNTER_CLOCKWISE, startDeg, endDeg);
+            }
+        }
+    }
+
+    private function drawTick(dc as Dc, cx as Number, cy as Number, outer as Number, ringWidth as Number, value as Float, positive as Boolean, color as Number) as Void {
+        var angleDeg = 90.0;
+        if (positive) {
+            var step = value * 10.0;
+            if (step > 30.0) {
+                step = 30.0;
+            }
+            angleDeg = 90.0 - 6.0 * step;
+        } else {
+            var stepN = value / 0.0333;
+            if (stepN > 30.0) {
+                stepN = 30.0;
+            }
+            angleDeg = 90.0 + 6.0 * stepN;
+        }
+        var rad = Math.toRadians(angleDeg);
+        var cosA = Math.cos(rad);
+        var sinA = Math.sin(rad);
+        var r1 = outer + 2;
+        var r2 = outer - ringWidth - 2;
+        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx + (r1 * cosA).toNumber(), cy - (r1 * sinA).toNumber(), cx + (r2 * cosA).toNumber(), cy - (r2 * sinA).toNumber());
+    }
+
+    private function drawNotch(dc as Dc, cx as Number, cy as Number, outer as Number, ringWidth as Number, step as Float, positive as Boolean) as Void {
+        var angleDeg = positive ? 90.0 - 6.0 * step : 90.0 + 6.0 * step;
+        var rad = Math.toRadians(angleDeg);
+        var cosA = Math.cos(rad);
+        var sinA = Math.sin(rad);
+        var r1 = outer + 1;
+        var r2 = outer - ringWidth / 2;
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx + (r1 * cosA).toNumber(), cy - (r1 * sinA).toNumber(), cx + (r2 * cosA).toNumber(), cy - (r2 * sinA).toNumber());
+    }
+
+    // Inner thin yellow arc. Felt-force convention: right turn → 3 o'clock,
+    // braking → 12 o'clock. Length grows with the planar G magnitude.
+    private function drawHArc(dc as Dc, cx as Number, cy as Number, r as Number, latG as Float, lonG as Float) as Void {
+        if (r < 20) {
+            return;
+        }
+        var mag2 = latG * latG + lonG * lonG;
+        if (mag2 < 0.04) {
+            return;
+        }
+        var mag = Math.sqrt(mag2);
+        // Felt direction: the force on the body opposes the bike's accel.
+        // Braking (lonG < 0) → body pushed forward → arc at 12 (90°).
+        // Right turn (latG > 0) → body pushed right → arc at 3 (0°).
+        var feltAngle = Math.toDegrees(Math.atan2(-lonG, latG));
+        var halfSweep = mag * 30.0;
+        if (halfSweep > 60.0) {
+            halfSweep = 60.0;
+        }
+        var start = feltAngle - halfSweep;
+        var end = feltAngle + halfSweep;
+        dc.setPenWidth(2);
+        dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+        dc.drawArc(cx, cy, r, Graphics.ARC_COUNTER_CLOCKWISE, start, end);
     }
 
     private function drawGpsRing(dc as Dc, w as Number, h as Number) as Void {

@@ -55,6 +55,22 @@ class Snapshot {
     var jumpTotalMs as Number = 0;
     var accelRate as Number = 0;
     var gyroRate as Number = 0;
+    // G-force view state. Floats are in g. ringG is the larger per-second
+    // excursion of (vertical load - 1 g). peakHoldPos / peakHoldNeg are the
+    // 3 s peak-hold tick positions on each ring half. latG is the signed
+    // lateral G (right positive, felt-force convention). landPeak is the
+    // last landing max |a|; landShowMs > 0 means the LAND label is held.
+    // airLiveMs mirrors the live air-time counter during a jump.
+    var gforceReady as Boolean = false;
+    var ringG as Float = 0.0;
+    var peakHoldPos as Float = 0.0;
+    var peakHoldNeg as Float = 0.0;
+    var latG as Float = 0.0;
+    var lonG as Float = 0.0;
+    var landPeak as Float = 0.0;
+    var landShowMs as Number = 0;
+    var airLiveMs as Number = 0;
+    var imuOkPct as Number = 0;
 
     function initialize() {
     }
@@ -84,7 +100,38 @@ class RideSession {
     private var _lapJumpCountField as FitContributor.Field or Null;
     private var _lapJumpAirField as FitContributor.Field or Null;
     private var _lapJumpLongField as FitContributor.Field or Null;
+    // G-force record fields: per-second peaks.
+    private var _gLatField as FitContributor.Field or Null;
+    private var _gLonField as FitContributor.Field or Null;
+    private var _gVertField as FitContributor.Field or Null;
+    // Session maxima.
+    private var _maxLandField as FitContributor.Field or Null;
+    private var _maxCornerField as FitContributor.Field or Null;
+    private var _maxBrakeField as FitContributor.Field or Null;
+    private var _maxAccelField as FitContributor.Field or Null;
+    private var _maxCombinedField as FitContributor.Field or Null;
+    private var _imuOkField as FitContributor.Field or Null;
+    // Lap maxima.
+    private var _lapMaxLandField as FitContributor.Field or Null;
+    private var _lapMaxCornerField as FitContributor.Field or Null;
+    private var _lapMaxBrakeField as FitContributor.Field or Null;
+    private var _lapMaxAccelField as FitContributor.Field or Null;
+    // Session / lap running maxima (in g). These feed the FIT fields and
+    // the Snapshot the view reads.
+    private var _maxLand as Float = 0.0;
+    private var _maxCorner as Float = 0.0;
+    private var _maxBrake as Float = 0.0;
+    private var _maxAccel as Float = 0.0;
+    private var _maxCombined as Float = 0.0;
+    private var _lapMaxLand as Float = 0.0;
+    private var _lapMaxCorner as Float = 0.0;
+    private var _lapMaxBrake as Float = 0.0;
+    private var _lapMaxAccel as Float = 0.0;
+    // Previous-second GPS speed, so sample() can hand dv/dt to Gforce.
+    private var _prevGpsMps as Float = 0.0;
+    private var _hadPrevGps as Boolean = false;
     private var _jumps as JumpDetector or Null;
+    private var _gforce as Gforce or Null;
     private var _listening as Boolean = false;
     private var _listenRate as Number = 0;
     private var _gyroOn as Boolean = false;
@@ -201,6 +248,34 @@ class RideSession {
             _lapJumpCountField = tryField(session, "jump_count", 7, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_LAP, "count", 0);
             _lapJumpAirField = tryField(session, "jump_air_ms", 8, FitContributor.DATA_TYPE_UINT32, FitContributor.MESG_TYPE_LAP, "ms", 0);
             _lapJumpLongField = tryField(session, "jump_longest_ms", 9, FitContributor.DATA_TYPE_UINT16, FitContributor.MESG_TYPE_LAP, "ms", 0);
+            // G-force. Floats are in g with precision=2 on the fitContributions
+            // side. Record new fields total 12 bytes (3 × 4). Session new
+            // fields total 21 bytes, lap new fields 16 bytes. All comfortably
+            // under the 256-byte-per-message limit (see plan section 3).
+            _gLatField = tryField(session, "g_lat", 10, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_RECORD, "g", 0);
+            _gLonField = tryField(session, "g_lon", 11, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_RECORD, "g", 0);
+            _gVertField = tryField(session, "g_vert", 12, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_RECORD, "g", 0);
+            _maxLandField = tryField(session, "max_land_g", 13, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_SESSION, "g", 0);
+            _maxCornerField = tryField(session, "max_corner_g", 14, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_SESSION, "g", 0);
+            _maxBrakeField = tryField(session, "max_brake_g", 15, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_SESSION, "g", 0);
+            _maxAccelField = tryField(session, "max_accel_g", 16, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_SESSION, "g", 0);
+            _maxCombinedField = tryField(session, "max_combined_g", 17, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_SESSION, "g", 0);
+            _imuOkField = tryField(session, "imu_ok_pct", 18, FitContributor.DATA_TYPE_UINT8, FitContributor.MESG_TYPE_SESSION, "percent", 0);
+            _lapMaxLandField = tryField(session, "max_land_g", 19, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_LAP, "g", 0);
+            _lapMaxCornerField = tryField(session, "max_corner_g", 20, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_LAP, "g", 0);
+            _lapMaxBrakeField = tryField(session, "max_brake_g", 21, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_LAP, "g", 0);
+            _lapMaxAccelField = tryField(session, "max_accel_g", 22, FitContributor.DATA_TYPE_FLOAT, FitContributor.MESG_TYPE_LAP, "g", 0);
+            _maxLand = 0.0;
+            _maxCorner = 0.0;
+            _maxBrake = 0.0;
+            _maxAccel = 0.0;
+            _maxCombined = 0.0;
+            _lapMaxLand = 0.0;
+            _lapMaxCorner = 0.0;
+            _lapMaxBrake = 0.0;
+            _lapMaxAccel = 0.0;
+            _prevGpsMps = 0.0;
+            _hadPrevGps = false;
             _maxKmh = 0.0;
             _lapMaxKmh = 0.0;
             _lapStartMs = 0;
@@ -213,6 +288,7 @@ class RideSession {
             clearTrack();
             _session = session;
             _jumps = null;
+            _gforce = null;
             _recordHold = false;
             beginRecording();
         } else if (_phase == PHASE_PAUSED) {
@@ -264,6 +340,14 @@ class RideSession {
             setNum(_lapJumpAirField, 0);
             setNum(_lapJumpLongField, 0);
         }
+        _lapMaxLand = 0.0;
+        _lapMaxCorner = 0.0;
+        _lapMaxBrake = 0.0;
+        _lapMaxAccel = 0.0;
+        setFloat(_lapMaxLandField, 0.0);
+        setFloat(_lapMaxCornerField, 0.0);
+        setFloat(_lapMaxBrakeField, 0.0);
+        setFloat(_lapMaxAccelField, 0.0);
     }
 
     function openConfirm() as Void {
@@ -314,6 +398,12 @@ class RideSession {
         _session = null;
         clearFit();
         _jumps = null;
+        var gforce = _gforce;
+        if (gforce != null) {
+            gforce.reset();
+            gforce.clearLanding();
+        }
+        _gforce = null;
         _recordHold = false;
         _maxKmh = 0.0;
         _lapMaxKmh = 0.0;
@@ -376,6 +466,80 @@ class RideSession {
                 lastField.setData(0);
             }
         }
+        var gforce = _gforce;
+        if (gforce != null) {
+            // Hand this second's GPS-derived longitudinal dv/dt to the
+            // sensor path so the next batch's per-sample reads have it.
+            var curSpeed = speed == null ? 0.0 : speed.toFloat();
+            if (!hasFix()) {
+                curSpeed = 0.0;
+            }
+            if (_hadPrevGps) {
+                gforce.noteGpsSecond(_prevGpsMps, curSpeed);
+            }
+            _prevGpsMps = curSpeed;
+            _hadPrevGps = true;
+            // Freeze this second's peaks, push them to the FIT record, roll
+            // session / lap maxima that exceed the floor, and clear.
+            gforce.advanceSecond();
+            var vert = gforce.ringValue();
+            var latVal = gforce.latG();
+            var lonVal = gforce.lonG();
+            setFloat(_gVertField, vert);
+            setFloat(_gLatField, latVal);
+            setFloat(_gLonField, lonVal);
+            var land = gforce.landPeak();
+            var cornerAbs = absF(latVal);
+            var combined = gforce.combinedPeak();
+            // Floor thresholds keep sensor noise out of the summary. These
+            // match the plan's uncertainty bands: ±0.15-0.25 g for corner
+            // and brake, plus a safety margin.
+            if (land > _maxLand) {
+                _maxLand = land;
+                setFloat(_maxLandField, _maxLand);
+            }
+            if (land > _lapMaxLand) {
+                _lapMaxLand = land;
+                setFloat(_lapMaxLandField, _lapMaxLand);
+            }
+            if (cornerAbs >= 0.3 && cornerAbs > _maxCorner) {
+                _maxCorner = cornerAbs;
+                setFloat(_maxCornerField, _maxCorner);
+            }
+            if (cornerAbs >= 0.3 && cornerAbs > _lapMaxCorner) {
+                _lapMaxCorner = cornerAbs;
+                setFloat(_lapMaxCornerField, _lapMaxCorner);
+            }
+            if (lonVal <= -0.3) {
+                var braking = -lonVal;
+                if (braking > _maxBrake) {
+                    _maxBrake = braking;
+                    setFloat(_maxBrakeField, _maxBrake);
+                }
+                if (braking > _lapMaxBrake) {
+                    _lapMaxBrake = braking;
+                    setFloat(_lapMaxBrakeField, _lapMaxBrake);
+                }
+            } else if (lonVal >= 0.3) {
+                if (lonVal > _maxAccel) {
+                    _maxAccel = lonVal;
+                    setFloat(_maxAccelField, _maxAccel);
+                }
+                if (lonVal > _lapMaxAccel) {
+                    _lapMaxAccel = lonVal;
+                    setFloat(_lapMaxAccelField, _lapMaxAccel);
+                }
+            }
+            if (combined > _maxCombined) {
+                _maxCombined = combined;
+                setFloat(_maxCombinedField, _maxCombined);
+            }
+            var imuField = _imuOkField;
+            if (imuField != null) {
+                imuField.setData(gforce.imuOkPct());
+            }
+            gforce.clearSecond();
+        }
     }
 
     function snapshot() as Snapshot {
@@ -435,6 +599,21 @@ class RideSession {
         }
         snap.accelRate = _accelRate;
         snap.gyroRate = _gyroRate;
+        var gforce = _gforce;
+        if (gforce != null) {
+            snap.gforceReady = gforce.gravityReady();
+            snap.ringG = gforce.ringValue();
+            snap.peakHoldPos = gforce.holdPos();
+            snap.peakHoldNeg = gforce.holdNeg();
+            snap.latG = gforce.latG();
+            snap.lonG = gforce.lonG();
+            snap.landPeak = gforce.landPeak();
+            snap.landShowMs = gforce.landShowMs();
+            snap.imuOkPct = gforce.imuOkPct();
+        }
+        if (jumps != null) {
+            snap.airLiveMs = jumps.airLiveMs();
+        }
         return snap;
     }
 
@@ -480,6 +659,10 @@ class RideSession {
             return;
         }
         jumps.setSpeed(hasFix(), speedKmh());
+        var gforce = _gforce;
+        if (gforce != null) {
+            gforce.setSpeed(hasFix(), currentSpeedMps());
+        }
         for (var i = 0; i < n; i += 1) {
             var gxv = 0;
             var gyv = 0;
@@ -489,8 +672,18 @@ class RideSession {
                 gyv = Math.round(gy[i]).toNumber();
                 gzv = Math.round(gz[i]).toNumber();
             }
+            if (gforce != null) {
+                // G first: a jump accept arms the landing window, and the
+                // next samples of this same batch still belong to the
+                // landing in the real world. One sample's worth of lead
+                // doesn't matter in practice.
+                gforce.push(ax[i], ay[i], az[i], gxv, gyv, gzv);
+            }
             if (jumps.push(ax[i], ay[i], az[i], gxv, gyv, gzv)) {
                 noteJump(jumps);
+                if (gforce != null) {
+                    gforce.armLanding();
+                }
             }
         }
     }
@@ -547,6 +740,20 @@ class RideSession {
                 rate = _gyroRate;
             }
             _jumps = new JumpDetector(rate, gyroOn);
+        }
+        // Gforce is cheap and always safe. Instantiate it in lockstep with
+        // the jump detector so the two share rate and gyro availability. It
+        // reports zeros on cold start and when inputs are missing. If
+        // construction throws for any reason, swallow it and leave _gforce
+        // null; the ride view falls back to a plain ring and the FIT G
+        // fields are not written. The jump path stays intact.
+        if (_gforce == null) {
+            try {
+                _gforce = new Gforce(rate, gyroOn);
+            } catch (ex) {
+                _gforce = null;
+                System.println("MX gforce init failed");
+            }
         }
         _listenRate = rate;
         _gyroOn = gyroOn;
@@ -680,5 +887,40 @@ class RideSession {
         _lapJumpCountField = null;
         _lapJumpAirField = null;
         _lapJumpLongField = null;
+        _gLatField = null;
+        _gLonField = null;
+        _gVertField = null;
+        _maxLandField = null;
+        _maxCornerField = null;
+        _maxBrakeField = null;
+        _maxAccelField = null;
+        _maxCombinedField = null;
+        _imuOkField = null;
+        _lapMaxLandField = null;
+        _lapMaxCornerField = null;
+        _lapMaxBrakeField = null;
+        _lapMaxAccelField = null;
+    }
+
+    private function setFloat(field as FitContributor.Field or Null, value as Float) as Void {
+        if (field != null) {
+            field.setData(value);
+        }
+    }
+
+    private function absF(value as Float) as Float {
+        return value >= 0.0 ? value : -value;
+    }
+
+    private function currentSpeedMps() as Float {
+        var position = _position;
+        if (position == null) {
+            return 0.0;
+        }
+        var speed = position.speed;
+        if (speed == null) {
+            return 0.0;
+        }
+        return speed.toFloat();
     }
 }
