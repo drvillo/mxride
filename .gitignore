@@ -53,3 +53,4 @@ desktop.ini
 
 # Vendored Cursor agent skills (reinstall with pstack)
 .cursor/skills/
+scripts/__pycache__/
