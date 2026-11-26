@@ -63,4 +63,22 @@ module Mx {
     function formatRate(accel as Number, gyro as Number) as String {
         return "A" + accel.toString() + " G" + gyro.toString();
     }
+
+    // Signed G in one-decimal form. Small values round down to 0.0 so a
+    // steady wrist does not show noise. The leading sign is dropped for 0.0.
+    function formatG(value as Float) as String {
+        var v = value;
+        if (v > -0.05 && v < 0.05) {
+            return "0.0";
+        }
+        var sign = "";
+        if (v < 0.0) {
+            sign = "-";
+            v = -v;
+        }
+        var tenths = (v * 10.0 + 0.5).toNumber();
+        var whole = tenths / 10;
+        var frac = tenths % 10;
+        return sign + whole.toString() + "." + frac.toString();
+    }
 }
