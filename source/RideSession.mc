@@ -85,6 +85,7 @@ class RideSession {
     private var _lapJumpAirField as FitContributor.Field or Null;
     private var _lapJumpLongField as FitContributor.Field or Null;
     private var _jumps as JumpDetector or Null;
+    private var _diag as DiagCollector or Null;
     private var _listening as Boolean = false;
     private var _listenRate as Number = 0;
     private var _gyroOn as Boolean = false;
@@ -137,6 +138,10 @@ class RideSession {
             Attention.vibrate([new Attention.VibeProfile(70, 140)]);
         }
         _gpsReady = ready;
+        var diag = _diag;
+        if (DIAG_ENABLED && diag != null && _phase == PHASE_RECORDING) {
+            diag.onPosition();
+        }
         var loc = info.position;
         if (loc != null && _phase == PHASE_RECORDING && accuracy >= Position.QUALITY_POOR) {
             var deg = loc.toDegrees();
@@ -213,6 +218,17 @@ class RideSession {
             clearTrack();
             _session = session;
             _jumps = null;
+            _diag = null;
+            if (DIAG_ENABLED) {
+                try {
+                    var diag = new DiagCollector();
+                    diag.beginSession(session, _accelRate, _gyroRate);
+                    _diag = diag;
+                } catch (ex) {
+                    _diag = null;
+                    System.println("MX diag init failed");
+                }
+            }
             _recordHold = false;
             beginRecording();
         } else if (_phase == PHASE_PAUSED) {
@@ -306,6 +322,10 @@ class RideSession {
             return;
         }
         stopListen();
+        var diag = _diag;
+        if (DIAG_ENABLED && diag != null && _choice == CHOICE_SAVE) {
+            diag.finishSession();
+        }
         if (_choice == CHOICE_SAVE) {
             liveSession().save();
         } else {
@@ -314,6 +334,7 @@ class RideSession {
         _session = null;
         clearFit();
         _jumps = null;
+        _diag = null;
         _recordHold = false;
         _maxKmh = 0.0;
         _lapMaxKmh = 0.0;
@@ -375,6 +396,10 @@ class RideSession {
             } else {
                 lastField.setData(0);
             }
+        }
+        var diag = _diag;
+        if (DIAG_ENABLED && diag != null) {
+            diag.tick();
         }
     }
 
@@ -443,9 +468,13 @@ class RideSession {
         if (_phase != PHASE_RECORDING || jumps == null) {
             return;
         }
+        var diag = _diag;
         var accel = data.accelerometerData;
         if (accel == null) {
             jumps.abort();
+            if (DIAG_ENABLED && diag != null) {
+                diag.onBatch(0, 0, _listenRate);
+            }
             return;
         }
         var ax = accel.x;
@@ -465,6 +494,9 @@ class RideSession {
             var gyro = data.gyroscopeData;
             if (gyro == null) {
                 jumps.abort();
+                if (DIAG_ENABLED && diag != null) {
+                    diag.onBatch(n, 0, _listenRate);
+                }
                 return;
             }
             gx = gyro.x;
@@ -472,11 +504,30 @@ class RideSession {
             gz = gyro.z;
             if (gx.size() != ax.size()) {
                 jumps.abort();
+                if (DIAG_ENABLED && diag != null) {
+                    diag.onBatch(n, 0, _listenRate);
+                }
                 return;
             }
         }
+        var gyroN = (_gyroOn && gx != null) ? n : 0;
+        if (DIAG_ENABLED && diag != null) {
+            diag.onBatch(n, gyroN, _listenRate);
+        }
         if (n * 2 < _listenRate) {
             jumps.abort();
+            // Still push samples to diag so a short batch's values are counted.
+            if (DIAG_ENABLED && diag != null) {
+                for (var k = 0; k < n; k += 1) {
+                    var gxk = 0; var gyk = 0; var gzk = 0;
+                    if (gx != null && gy != null && gz != null) {
+                        gxk = Math.round(gx[k]).toNumber();
+                        gyk = Math.round(gy[k]).toNumber();
+                        gzk = Math.round(gz[k]).toNumber();
+                    }
+                    diag.push(ax[k], ay[k], az[k], gxk, gyk, gzk, _gyroOn && gx != null);
+                }
+            }
             return;
         }
         jumps.setSpeed(hasFix(), speedKmh());
@@ -488,6 +539,9 @@ class RideSession {
                 gxv = Math.round(gx[i]).toNumber();
                 gyv = Math.round(gy[i]).toNumber();
                 gzv = Math.round(gz[i]).toNumber();
+            }
+            if (DIAG_ENABLED && diag != null) {
+                diag.push(ax[i], ay[i], az[i], gxv, gyv, gzv, _gyroOn && gx != null);
             }
             if (jumps.push(ax[i], ay[i], az[i], gxv, gyv, gzv)) {
                 noteJump(jumps);

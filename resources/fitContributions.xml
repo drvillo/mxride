@@ -1,0 +1,254 @@
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <fitContributions>
+        <!-- Session fields (existing in 1.0.5) -->
+        <fitField id="0"
+                  displayInActivitySummary="true"
+                  sortOrder="0"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_speed_label"
+                  unitLabel="@Strings.fit_kmh_units" />
+
+        <fitField id="2"
+                  displayInActivitySummary="true"
+                  sortOrder="10"
+                  dataLabel="@Strings.fit_jump_count_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="3"
+                  displayInActivitySummary="true"
+                  sortOrder="11"
+                  dataLabel="@Strings.fit_jump_air_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="4"
+                  displayInActivitySummary="true"
+                  sortOrder="12"
+                  dataLabel="@Strings.fit_jump_long_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="6"
+                  displayInActivitySummary="true"
+                  sortOrder="13"
+                  dataLabel="@Strings.fit_jump_recent_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <!-- Lap fields (existing in 1.0.5) -->
+        <fitField id="1"
+                  displayInActivityLaps="true"
+                  sortOrder="20"
+                  precision="2"
+                  dataLabel="@Strings.fit_lap_max_speed_label"
+                  unitLabel="@Strings.fit_kmh_units" />
+
+        <fitField id="7"
+                  displayInActivityLaps="true"
+                  sortOrder="21"
+                  dataLabel="@Strings.fit_jump_count_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="8"
+                  displayInActivityLaps="true"
+                  sortOrder="22"
+                  dataLabel="@Strings.fit_jump_air_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="9"
+                  displayInActivityLaps="true"
+                  sortOrder="23"
+                  dataLabel="@Strings.fit_jump_long_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <!-- Record field (existing in 1.0.5) -->
+        <fitField id="5"
+                  displayInChart="true"
+                  sortOrder="30"
+                  chartTitle="@Strings.fit_jump_last_chart"
+                  dataLabel="@Strings.fit_jump_last_label"
+                  unitLabel="@Strings.fit_ms_units"
+                  fillColor="#FFAA00" />
+
+        <!-- Record diagnostic fields (new in phase 0) -->
+        <fitField id="10"
+                  displayInChart="true"
+                  sortOrder="40"
+                  chartTitle="@Strings.fit_diag_samples_chart"
+                  dataLabel="@Strings.fit_diag_samples_label"
+                  unitLabel="@Strings.fit_count_units"
+                  fillColor="#00AAFF" />
+
+        <fitField id="11"
+                  displayInChart="true"
+                  sortOrder="41"
+                  chartTitle="@Strings.fit_diag_gps_chart"
+                  dataLabel="@Strings.fit_diag_gps_label"
+                  unitLabel="@Strings.fit_count_units"
+                  fillColor="#55FF55" />
+
+        <fitField id="12"
+                  displayInChart="true"
+                  sortOrder="42"
+                  chartTitle="@Strings.fit_diag_a_peak_chart"
+                  dataLabel="@Strings.fit_diag_a_peak_label"
+                  unitLabel="@Strings.fit_mg_units"
+                  fillColor="#00FF00" />
+
+        <fitField id="13"
+                  displayInChart="true"
+                  sortOrder="43"
+                  chartTitle="@Strings.fit_diag_a_min_chart"
+                  dataLabel="@Strings.fit_diag_a_min_label"
+                  unitLabel="@Strings.fit_mg_units"
+                  fillColor="#FF0000" />
+
+        <fitField id="14"
+                  displayInChart="true"
+                  sortOrder="44"
+                  chartTitle="@Strings.fit_diag_g_peak_chart"
+                  dataLabel="@Strings.fit_diag_g_peak_label"
+                  unitLabel="@Strings.fit_dps_units"
+                  fillColor="#FFAA00" />
+
+        <fitField id="15"
+                  displayInChart="true"
+                  sortOrder="45"
+                  chartTitle="@Strings.fit_diag_flags_chart"
+                  dataLabel="@Strings.fit_diag_flags_label"
+                  unitLabel="@Strings.fit_mask_units"
+                  fillColor="#AAAAAA" />
+
+        <!-- Session diagnostic summaries (new in phase 0) -->
+        <fitField id="20"
+                  displayInActivitySummary="true"
+                  sortOrder="50"
+                  dataLabel="@Strings.fit_diag_accel_cfg_label"
+                  unitLabel="@Strings.fit_hz_units" />
+
+        <fitField id="21"
+                  displayInActivitySummary="true"
+                  sortOrder="51"
+                  dataLabel="@Strings.fit_diag_gyro_cfg_label"
+                  unitLabel="@Strings.fit_hz_units" />
+
+        <fitField id="22"
+                  displayInActivitySummary="true"
+                  sortOrder="52"
+                  precision="2"
+                  dataLabel="@Strings.fit_diag_accel_actual_label"
+                  unitLabel="@Strings.fit_hz_units" />
+
+        <fitField id="23"
+                  displayInActivitySummary="true"
+                  sortOrder="53"
+                  precision="2"
+                  dataLabel="@Strings.fit_diag_gyro_actual_label"
+                  unitLabel="@Strings.fit_hz_units" />
+
+        <fitField id="24"
+                  displayInActivitySummary="true"
+                  sortOrder="54"
+                  precision="2"
+                  dataLabel="@Strings.fit_diag_gps_actual_label"
+                  unitLabel="@Strings.fit_hz_units" />
+
+        <fitField id="25"
+                  displayInActivitySummary="true"
+                  sortOrder="55"
+                  dataLabel="@Strings.fit_diag_batches_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="26"
+                  displayInActivitySummary="true"
+                  sortOrder="56"
+                  dataLabel="@Strings.fit_diag_record_sec_label"
+                  unitLabel="@Strings.fit_s_units" />
+
+        <fitField id="27"
+                  displayInActivitySummary="true"
+                  sortOrder="57"
+                  dataLabel="@Strings.fit_diag_ax_lo_label"
+                  unitLabel="@Strings.fit_mg_units" />
+        <fitField id="28"
+                  displayInActivitySummary="true"
+                  sortOrder="58"
+                  dataLabel="@Strings.fit_diag_ax_hi_label"
+                  unitLabel="@Strings.fit_mg_units" />
+        <fitField id="29"
+                  displayInActivitySummary="true"
+                  sortOrder="59"
+                  dataLabel="@Strings.fit_diag_ay_lo_label"
+                  unitLabel="@Strings.fit_mg_units" />
+        <fitField id="30"
+                  displayInActivitySummary="true"
+                  sortOrder="60"
+                  dataLabel="@Strings.fit_diag_ay_hi_label"
+                  unitLabel="@Strings.fit_mg_units" />
+        <fitField id="31"
+                  displayInActivitySummary="true"
+                  sortOrder="61"
+                  dataLabel="@Strings.fit_diag_az_lo_label"
+                  unitLabel="@Strings.fit_mg_units" />
+        <fitField id="32"
+                  displayInActivitySummary="true"
+                  sortOrder="62"
+                  dataLabel="@Strings.fit_diag_az_hi_label"
+                  unitLabel="@Strings.fit_mg_units" />
+
+        <fitField id="33"
+                  displayInActivitySummary="true"
+                  sortOrder="63"
+                  dataLabel="@Strings.fit_diag_gx_lo_label"
+                  unitLabel="@Strings.fit_dps_units" />
+        <fitField id="34"
+                  displayInActivitySummary="true"
+                  sortOrder="64"
+                  dataLabel="@Strings.fit_diag_gx_hi_label"
+                  unitLabel="@Strings.fit_dps_units" />
+        <fitField id="35"
+                  displayInActivitySummary="true"
+                  sortOrder="65"
+                  dataLabel="@Strings.fit_diag_gy_lo_label"
+                  unitLabel="@Strings.fit_dps_units" />
+        <fitField id="36"
+                  displayInActivitySummary="true"
+                  sortOrder="66"
+                  dataLabel="@Strings.fit_diag_gy_hi_label"
+                  unitLabel="@Strings.fit_dps_units" />
+        <fitField id="37"
+                  displayInActivitySummary="true"
+                  sortOrder="67"
+                  dataLabel="@Strings.fit_diag_gz_lo_label"
+                  unitLabel="@Strings.fit_dps_units" />
+        <fitField id="38"
+                  displayInActivitySummary="true"
+                  sortOrder="68"
+                  dataLabel="@Strings.fit_diag_gz_hi_label"
+                  unitLabel="@Strings.fit_dps_units" />
+
+        <fitField id="39"
+                  displayInActivitySummary="true"
+                  sortOrder="69"
+                  dataLabel="@Strings.fit_diag_accel_clip_label"
+                  unitLabel="@Strings.fit_count_units" />
+        <fitField id="40"
+                  displayInActivitySummary="true"
+                  sortOrder="70"
+                  dataLabel="@Strings.fit_diag_accel_wrap_label"
+                  unitLabel="@Strings.fit_count_units" />
+        <fitField id="41"
+                  displayInActivitySummary="true"
+                  sortOrder="71"
+                  dataLabel="@Strings.fit_diag_gyro_clip_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="42"
+                  displayInActivitySummary="true"
+                  sortOrder="72"
+                  dataLabel="@Strings.fit_diag_a_hist_label"
+                  unitLabel="@Strings.fit_count_units" />
+        <fitField id="43"
+                  displayInActivitySummary="true"
+                  sortOrder="73"
+                  dataLabel="@Strings.fit_diag_g_hist_label"
+                  unitLabel="@Strings.fit_count_units" />
+    </fitContributions>
+</resources>

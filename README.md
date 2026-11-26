@@ -77,6 +77,14 @@ fēnix 8, fēnix E, and fēnix 9. These ids are in SDK 9.3.0 `devices.xml`. The 
 
 240, 260, and 280 keep the top-weighted stack from 1.0.3. On 416, 454, and 466 the same block is centered, the track box is inset so the corners stay inside the circle, and the GPS ring is a 3 px stroke set in from the bezel. The background stays black. There is no solid white panel. The yellow SAVE bar is only on the save screen.
 
+## Phase 0 sensor diagnostics
+
+`source/Diag.mc` collects per-second and per-session metadata on the watch's own accel, gyro, and GPS and writes it as FIT developer fields on top of the existing jump + speed fields. After a ride, `scripts/phase0_fit_report.py path/to/ride.fit` prints the delivered sample rates, per-axis min/max (with saturation / sign-wrap verdicts), a 0.5 g histogram of total |a|, a 250 dps histogram of |gyro|, and per-record aggregates. All diagnostic field ids start at 10; nothing about the ids already shipped in 1.0.5 is changed. `resources/fitContributions.xml` now labels every developer field for Garmin Connect, which only reads that metadata on store (beta / public) installs, not sideloads.
+
+To turn the diagnostic path off, flip `DIAG_ENABLED` in `source/Diag.mc` to `false` and rebuild; the collector is never constructed and the file is left for the optimizer to strip. To delete it, remove `source/Diag.mc`, the `_diag` field and the handful of `DIAG_ENABLED` call sites in `source/RideSession.mc`, and the diagnostic entries in `resources/fitContributions.xml` and `resources/strings/fit_strings.xml`.
+
+The phase-0 build is still signed with the beta key (`A7C3E91B4D2F4A6E8B1C0D5E7F908172` manifest id). The public store id in `manifest-public.xml` is unchanged.
+
 fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of 1.0.5 is 30876 bytes on disk for fēnix 6, with 17992 bytes of code and 2933 bytes of data (20925 total, 16.0% of 131072). The same flags produce a 23868 byte fēnix 7 `.prg` (13463 code and 3247 data, 16710 total). An unstripped build is larger because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
 
 ## Build
