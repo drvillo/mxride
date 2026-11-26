@@ -11,4 +11,21 @@
     <string id="fit_jump_recent_label">Recent airs</string>
     <string id="fit_ms_units">ms</string>
     <string id="fit_count_units">count</string>
+
+    <string id="fit_g_units">g</string>
+    <string id="fit_pct_units">%</string>
+
+    <string id="fit_g_vert_label">Vertical G</string>
+    <string id="fit_g_vert_chart">Vertical G (load - 1)</string>
+    <string id="fit_g_lat_label">Lateral G</string>
+    <string id="fit_g_lat_chart">Lateral G (+ right)</string>
+    <string id="fit_g_lon_label">Longitudinal G</string>
+    <string id="fit_g_lon_chart">Longitudinal G (+ accel)</string>
+
+    <string id="fit_max_land_g_label">Max landing G</string>
+    <string id="fit_max_corner_g_label">Max cornering G</string>
+    <string id="fit_max_brake_g_label">Max braking G</string>
+    <string id="fit_max_accel_g_label">Max acceleration G</string>
+    <string id="fit_max_combined_g_label">Max combined G</string>
+    <string id="fit_imu_ok_pct_label">IMU convergence</string>
 </strings>
