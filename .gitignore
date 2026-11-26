@@ -3,6 +3,7 @@ bin/*.iq
 bin/*.prg
 bin/*.prg.debug.xml
 bin/*-settings.json
+bin/*-fit_contributions.json
 bin/*.mir
 bin/gen/
 bin/mir/
