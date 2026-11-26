@@ -216,6 +216,17 @@ class JumpDetector {
         return ms;
     }
 
+    // Live air time (ms) while the detector thinks we are in phase 1. The
+    // view uses this for the "AIR 0.6" label. Returns 0 when on the ground
+    // or during the short landing-spike window; the view falls back to the
+    // normal G line in that case.
+    function airLiveMs() as Number {
+        if (_state != 1) {
+            return 0;
+        }
+        return (_airSamples * 1000) / _rate;
+    }
+
     private function finish() as Boolean {
         var ms = (_airSamples * 1000) / _rate;
         var floor = _gyroPulse ? 250 : 300;
