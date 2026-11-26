@@ -1,6 +1,8 @@
 # MX Ride
 
-Watch app for motocross and desert riding. Version 1.0.5. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track, then jump count and air time.
+Watch app for motocross and desert riding. Version 1.0.6. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track, then jump count and air time.
+
+1.0.6 is 1.0.5 plus Garmin Connect labels for the developer fields. The ride app, FIT output, and the 10 developer field ids (0 `max_speed`, 1 `lap_max_speed`, 2 `jump_count`, 3 `jump_air_ms`, 4 `jump_longest_ms`, 5 `jump_last_ms` on each record, 6 `jump_recent_ms`, and 7/8/9 the lap jump totals) are unchanged. `resources/fitContributions.xml` names each id so Garmin Connect shows "Max speed", "Jumps", "Air time", "Longest air", "Lap max speed", "Last air", and so on, with km/h, ms, and count units, and graphs `jump_last_ms` on the record chart. Before, Connect listed those ids with raw names and no units.
 
 Tested in the Connect IQ 9.3.0 simulator on a fēnix 6 Pro and a fēnix 7, both 260 px. Built for every fēnix 6, 7, 8, and 9 product id in that SDK, plus fēnix E. The 416, 454, and 466 faces have no simulator skin in this environment, so they were compiled and laid out, not screenshotted.
 
@@ -77,7 +79,7 @@ fēnix 8, fēnix E, and fēnix 9. These ids are in SDK 9.3.0 `devices.xml`. The 
 
 240, 260, and 280 keep the top-weighted stack from 1.0.3. On 416, 454, and 466 the same block is centered, the track box is inset so the corners stay inside the circle, and the GPS ring is a 3 px stroke set in from the bezel. The background stays black. There is no solid white panel. The yellow SAVE bar is only on the save screen.
 
-fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of 1.0.5 is 30876 bytes on disk for fēnix 6, with 17992 bytes of code and 2933 bytes of data (20925 total, 16.0% of 131072). The same flags produce a 23868 byte fēnix 7 `.prg` (13463 code and 3247 data, 16710 total). An unstripped build is larger because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
+fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of 1.0.6 is 31180 bytes on disk for fēnix 6, with 17992 bytes of code and 3021 bytes of data (21013 total, 16.03% of 131072). The `fitContributions.xml` labels and their strings add 88 bytes of data over 1.0.5; the code is byte-for-byte identical because no Monkey C changed. An unstripped build is larger because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
 
 ## Build
 
@@ -97,15 +99,19 @@ That passes `-r` and `-O 2` to every `monkeyc` invocation, including the `--publ
 
 Outputs `bin/mxride-<device>.prg` for every id in the tables above, plus `bin/mxride.iq`. That package keeps the beta app id `A7C3E91B4D2F4A6E8B1C0D5E7F908172`.
 
-Garmin will not take a beta app public. The public listing is a new app, same name (MX Ride), version, and devices, app id `97044CB1ADC84D52B353125C4B120D7D`. The beta id `A7C3E91B4D2F4A6E8B1C0D5E7F908172` was signed with a developer key that is gone, so that store listing cannot take a 1.0.5 update. 1.0.5, beta and public, is signed with the key in `bin/developer_key.der`.
+Garmin will not take a beta app public. The public listing is a new app, same name (MX Ride), version, and devices, app id `97044CB1ADC84D52B353125C4B120D7D`. The beta id `A7C3E91B4D2F4A6E8B1C0D5E7F908172` was signed with a developer key that is gone, so that store listing cannot take a 1.0.6 update. 1.0.6, beta and public, is signed with the key in `bin/developer_key.der`.
+
+To produce the signed public store package with a given key file:
 
 ```
+cp /path/to/release/private.der bin/developer_key.der
 ./scripts/build.sh --public
+# writes bin/mxride-public.iq
 ```
 
-That writes `bin/mxride-public.iq` from `manifest-public.xml`. It does not rebuild the beta `.prg` files or `bin/mxride.iq`. The two manifests must match except for the app id, and the script refuses to build when they do not.
+The script reads the key from `bin/developer_key.der`. It never creates one unless you pass `--generate-key`, and it refuses to overwrite one that is already there. `./scripts/build.sh --public` writes `bin/mxride-public.iq` from `manifest-public.xml`. It does not rebuild the beta `.prg` files or `bin/mxride.iq`. The two manifests must match except for the app id, and the script refuses to build when they do not.
 
-`bin/developer_key.der` and `bin/developer_key.pem` are gitignored and are not created during a normal build. Builds (`bin/*.prg` and `bin/*.iq`) are not tracked in git either: run `./scripts/build.sh` locally, or grab a signed binary from the [GitHub Releases page](https://github.com/drvillo/mxride/releases). The 1.0.4 releases were signed with a different key. A 1.0.5 package will not update those listings.
+`bin/developer_key.der` and `bin/developer_key.pem` are gitignored and are not created during a normal build. Builds (`bin/*.prg` and `bin/*.iq`) are not tracked in git either: run `./scripts/build.sh` locally, or grab a signed binary from the [GitHub Releases page](https://github.com/drvillo/mxride/releases). The 1.0.4 releases were signed with a different key. A 1.0.6 package will not update those listings.
 
 ## Sideload
 
