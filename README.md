@@ -1,8 +1,14 @@
 # MX Ride
 
-Watch app for motocross and desert riding. Version 1.0.6. The big number is speed in km/h. Under it: heading, altitude, heart rate, timer, and distance. DOWN opens max speed and laps, then a north-up track, then jump count and air time.
+Watch app for motocross and desert riding. Version 1.0.6. The big number is speed in km/h. A G-ring wraps every edge of the ride page: green clockwise from 12 for compression and landings, red counter-clockwise for unloading and free fall, with a 3 s peak-hold tick and a thin yellow inner arc for cornering / braking direction. DOWN opens max speed, heading and altitude, then a north-up track, then jump count and air time.
 
-1.0.6 is 1.0.5 plus Garmin Connect labels for the developer fields. The ride app, FIT output, and the 10 developer field ids (0 `max_speed`, 1 `lap_max_speed`, 2 `jump_count`, 3 `jump_air_ms`, 4 `jump_longest_ms`, 5 `jump_last_ms` on each record, 6 `jump_recent_ms`, and 7/8/9 the lap jump totals) are unchanged. `resources/fitContributions.xml` names each id so Garmin Connect shows "Max speed", "Jumps", "Air time", "Longest air", "Lap max speed", "Last air", and so on, with km/h, ms, and count units, and graphs `jump_last_ms` on the record chart. Before, Connect listed those ids with raw names and no units.
+1.0.6 is three things stacked on 1.0.5: a G-ring on the ride page, per-second G capture in the FIT file, and Garmin Connect labels for every developer field, new and old.
+
+- **G-ring and the new G line.** The ring value is `vertical load − 1 g`, peak-of-second. Positive side (green) covers 30 segments × 0.1 g up to +3 g. Negative side (red) covers 30 segments × 0.033 g down to −1 g (free fall). A white tick on each side holds the highest value of the last 3 s. The thin yellow inner arc points where the horizontal G is felt — right turn at 3 o'clock, braking at 12, acceleration at 6 — with arc length growing with magnitude. The ride-page center now ends on a G line: `0.4 G` for the current ring value, `LAND 2.9` for 3 s after a landing-window peak, `AIR 0.6` live during a jump. Heading and altitude moved to the Stats page.
+- **New G fields in the FIT file.** Record fields (per second): `g_vert` (id 12), `g_lat` (id 10), `g_lon` (id 11), each a signed float in g. Session maxima: `max_land_g` (13), `max_corner_g` (14), `max_brake_g` (15), `max_accel_g` (16), `max_combined_g` (17), `imu_ok_pct` (18, a 0–100 share of samples where the gravity filter was converged). Lap maxima repeat the first four as 19–22. All floats record at `precision="2"`. Record new fields total 12 bytes, session new fields 21 bytes, lap new fields 16 bytes; every FIT message is well under the 256-byte-per-message developer-fields limit.
+- **Garmin Connect labels.** `resources/fitContributions.xml` names every developer field so Connect shows "Max speed", "Lap max speed", "Jumps", "Air time", "Longest air", "Recent airs", "Last air", "Vertical G", "Lateral G", "Longitudinal G", "Max landing G", "Max cornering G", "Max braking G", "Max acceleration G", "Max combined G", "IMU convergence", each with its unit (km/h, ms, count, g, %). The three per-second G fields and the existing `jump_last_ms` are also plotted on the activity's per-record chart.
+
+Existing field ids 0–9 and the FIT output for them are byte-for-byte unchanged. Both the beta app id `A7C3E91B4D2F4A6E8B1C0D5E7F908172` and the public app id `97044CB1ADC84D52B353125C4B120D7D` are the same as 1.0.5.
 
 Tested in the Connect IQ 9.3.0 simulator on a fēnix 6 Pro and a fēnix 7, both 260 px. Built for every fēnix 6, 7, 8, and 9 product id in that SDK, plus fēnix E. The 416, 454, and 466 faces have no simulator skin in this environment, so they were compiled and laid out, not screenshotted.
 
@@ -79,7 +85,7 @@ fēnix 8, fēnix E, and fēnix 9. These ids are in SDK 9.3.0 `devices.xml`. The 
 
 240, 260, and 280 keep the top-weighted stack from 1.0.3. On 416, 454, and 466 the same block is centered, the track box is inset so the corners stay inside the circle, and the GPS ring is a 3 px stroke set in from the bezel. The background stays black. There is no solid white panel. The yellow SAVE bar is only on the save screen.
 
-fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of 1.0.6 is 31180 bytes on disk for fēnix 6, with 17992 bytes of code and 3021 bytes of data (21013 total, 16.03% of 131072). The `fitContributions.xml` labels and their strings add 88 bytes of data over 1.0.5; the code is byte-for-byte identical because no Monkey C changed. An unstripped build is larger because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
+fēnix 6 and 6S have a 128 KB watch-app limit. That limit is code plus data, not the `.prg` file size. A release build of 1.0.6 is 41516 bytes on disk for fēnix 6, with 26788 bytes of code and 4215 bytes of data (31003 total, 23.65% of 131072). The G-ring and the sensing module add about 8.8 KB of code and 1.3 KB of data over 1.0.5; the stripped `.prg` on disk grew by about 10.6 KB. Still leaves 100 KB of headroom on the base fēnix 6. An unstripped build is larger because it embeds the Connect IQ symbol table, and that table is not what the limit counts. Pro and 6X Pro have 1.25 MB. fēnix 7 and the newer AMOLED parts have 768 KB.
 
 ## Build
 
@@ -112,6 +118,25 @@ cp /path/to/release/private.der bin/developer_key.der
 The script reads the key from `bin/developer_key.der`. It never creates one unless you pass `--generate-key`, and it refuses to overwrite one that is already there. `./scripts/build.sh --public` writes `bin/mxride-public.iq` from `manifest-public.xml`. It does not rebuild the beta `.prg` files or `bin/mxride.iq`. The two manifests must match except for the app id, and the script refuses to build when they do not.
 
 `bin/developer_key.der` and `bin/developer_key.pem` are gitignored and are not created during a normal build. Builds (`bin/*.prg` and `bin/*.iq`) are not tracked in git either: run `./scripts/build.sh` locally, or grab a signed binary from the [GitHub Releases page](https://github.com/drvillo/mxride/releases). The 1.0.4 releases were signed with a different key. A 1.0.6 package will not update those listings.
+
+## G-ring and continuous G
+
+The ride page draws a 30-segment ring on each half, around the full bezel. Each segment is 0.1 g wide on the green (compression) side and 0.033 g on the red (unloading) side, so the two halves cover +3 g and −1 g respectively. The ring updates at 1 Hz — sensor batches arrive once per second, so the ring always shows the *last* second, which is also when the FIT record for that second is written.
+
+The center text is the ring's driving value, in g, with one decimal. Live overrides: during an in-progress jump the line reads `AIR 0.6`, the live air-time timer; for 3 s after a landing-window peak it reads `LAND 2.9`, the max |a| the wrist saw inside the 500 ms window right after the accepted jump. After those 3 s it falls back to the ring value.
+
+The thin yellow inner arc is the direction of horizontal G. Convention is felt-force: a right turn pushes the body right, so the arc parks at 3 o'clock; braking pushes the body forward, so the arc parks at 12; acceleration at 6 o'clock. Arc length grows with the horizontal G magnitude (1.5 g = ±45°, capped at ±60°).
+
+Sensing uses the wrist accelerometer and, when the watch has one, the gyro. A gravity vector in watch coordinates is rotated by the gyro each sample and nudged toward the measured accel at τ ≈ 2 s. Without a gyro the same vector is low-passed against the accel at τ ≈ 3 s. The nudge is frozen while `|a|` is more than ~0.3 g off 1 g, so landings, air and hard turns do not wash the estimate. Vertical load is the signed projection of `a` on that gravity vector. Horizontal is `a − (a·ĝ)ĝ`. Cornering G is yaw-rate × GPS speed when the gyro is available and speed is at least 10 km/h; otherwise the ring still works but the inner arc is driven by GPS alone. Braking / acceleration G is GPS `dv/dt`. See `source/Gforce.mc` for the per-sample loop and `scripts/gforce.py` for a Python mirror. `python3 scripts/gforce_harness.py` runs seven synthetic cases against both.
+
+Known limits for 1.0.6, since there was no ride test before release:
+
+- Cornering G is leaned-bike geometry: a wrist on top of the bars feels extra compression in a leaned turn, so a 1 g corner reads as `+0.4 g` on the ring and the yellow arc is where the cornering actually shows. Berms add real compression on top, so the ring in a berm is turn + compression and cannot be split by the wrist alone.
+- The gravity filter needs about 2 s of near-rest samples after a cold start before it reports lateral / longitudinal G. The ring itself (vertical load) works from the first sample.
+- A Fēnix 6 accelerometer caps near 8 g and can wrap past that; the filter clamps samples before smoothing but the ring will read low on a real crash.
+- Record-chart density in Connect depends on the watch's recording mode. Smart recording drops peaks between points. Summary maxima and lap maxima are unaffected.
+
+Rendering: `scripts/render_mockups.py` writes previews of the four states (berm, landing, air, braking) at 240, 260, 280, 416, 454 and 466 px using the same per-size table (`ringWidthFor`, `ringOuterInset`, `rideTop`) that `source/RideView.mc` uses. Not a watch screenshot, a faithful geometric preview. It saves to `/opt/cursor/artifacts` by default or the path in `$1`.
 
 ## Sideload
 
@@ -148,7 +173,18 @@ Missing GPS or heart rate draws `--`. Speed stays `--` until there is a fix. A z
 
 ## What is recorded
 
-The session is sport motorcycling, name Motocross. On Connect IQ 4.1.6 and later the subsport is motocross. fēnix 6 is API 3.4, which has no motocross subsport, so that field is left off and the sport stays motorcycling. The FIT gets the GPS track, speed, distance, elevation, ascent, timer, laps, heart rate when the watch has a reading, and the device's own calorie figure. Developer fields, in km/h: `max_speed` on the session, `lap_max_speed` on each lap. Jump fields: `jump_count`, `jump_air_ms`, and `jump_longest_ms` on the session and again on each lap, `jump_last_ms` on each record (the air time of a jump that ended in that second, otherwise 0), and `jump_recent_ms`, a session array of the last 32 air times. A 0 in that array is an empty slot. Two jumps in the same second share one record value; the session count is the one that does not drop a jump. There is no jump height.
+The session is sport motorcycling, name Motocross. On Connect IQ 4.1.6 and later the subsport is motocross. fēnix 6 is API 3.4, which has no motocross subsport, so that field is left off and the sport stays motorcycling. The FIT gets the GPS track, speed, distance, elevation, ascent, timer, laps, heart rate when the watch has a reading, and the device's own calorie figure.
+
+Developer fields, speed, in km/h: `max_speed` on the session (id 0), `lap_max_speed` on each lap (id 1).
+
+Jump fields, from 1.0.5: `jump_count`, `jump_air_ms`, and `jump_longest_ms` on the session and again on each lap (ids 2–4 and 7–9), `jump_last_ms` on each record (id 5; the air time of a jump that ended in that second, otherwise 0), and `jump_recent_ms`, a session array of the last 32 air times (id 6). A 0 in that array is an empty slot. Two jumps in the same second share one record value; the session count is the one that does not drop a jump. There is no jump height.
+
+G-force fields, new in 1.0.6, all floats in g:
+- Per record, every second: `g_vert` (id 12, signed ring value = peak-of-second vertical load − 1 g), `g_lat` (id 10, signed lateral, + right in felt-force convention), `g_lon` (id 11, signed longitudinal, + accel, − braking).
+- Per session: `max_land_g` (13), `max_corner_g` (14), `max_brake_g` (15), `max_accel_g` (16), `max_combined_g` (17), and `imu_ok_pct` (18, uint8, share of samples where the gravity filter was converged).
+- Per lap: `max_land_g` (19), `max_corner_g` (20), `max_brake_g` (21), `max_accel_g` (22). Reset on each lap.
+
+Summary maxima apply a 0.3 g floor on cornering and brake / accel so sensor noise cannot set a record, and landing G is only counted inside the 500 ms window right after an accepted jump (so a braking bump cannot set a landing record). The ring on screen has no such floor; it draws what the sensor reports.
 
 GPS is turned on when the app opens and stays on through pause, page changes, and save. It turns off only when the app exits. The call is `enableLocationEvents` with a continuous fix. SatIQ is requested only when `hasConfigurationSupport` says the watch has that configuration. fēnix 6 does not advertise SatIQ, so it takes the continuous path. The app does not pin multi-band max accuracy. A record is written either way, but latitude and longitude are filled in only while the watch has a fix. An indoor ride syncs an activity and Connect has nothing to draw a map from. `createSession` does not expose the recording interval, so 1 Hz versus smart recording stays with the device. The calorie number is the device algorithm. On a motorcycling activity that can be a poor estimate, because the bike is doing the work.
 
