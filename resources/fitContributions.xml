@@ -1,0 +1,70 @@
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <fitContributions>
+        <!-- Session fields. Match RideSession.createField(..., id, ...). -->
+        <fitField id="0"
+                  displayInActivitySummary="true"
+                  sortOrder="0"
+                  precision="2"
+                  dataLabel="@Strings.fit_max_speed_label"
+                  unitLabel="@Strings.fit_kmh_units" />
+
+        <fitField id="2"
+                  displayInActivitySummary="true"
+                  sortOrder="10"
+                  dataLabel="@Strings.fit_jump_count_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="3"
+                  displayInActivitySummary="true"
+                  sortOrder="11"
+                  dataLabel="@Strings.fit_jump_air_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="4"
+                  displayInActivitySummary="true"
+                  sortOrder="12"
+                  dataLabel="@Strings.fit_jump_long_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="6"
+                  displayInActivitySummary="true"
+                  sortOrder="13"
+                  dataLabel="@Strings.fit_jump_recent_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <!-- Lap fields. -->
+        <fitField id="1"
+                  displayInActivityLaps="true"
+                  sortOrder="20"
+                  precision="2"
+                  dataLabel="@Strings.fit_lap_max_speed_label"
+                  unitLabel="@Strings.fit_kmh_units" />
+
+        <fitField id="7"
+                  displayInActivityLaps="true"
+                  sortOrder="21"
+                  dataLabel="@Strings.fit_jump_count_label"
+                  unitLabel="@Strings.fit_count_units" />
+
+        <fitField id="8"
+                  displayInActivityLaps="true"
+                  sortOrder="22"
+                  dataLabel="@Strings.fit_jump_air_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <fitField id="9"
+                  displayInActivityLaps="true"
+                  sortOrder="23"
+                  dataLabel="@Strings.fit_jump_long_label"
+                  unitLabel="@Strings.fit_ms_units" />
+
+        <!-- Record field, graphed under the activity's elevation / speed curves. -->
+        <fitField id="5"
+                  displayInChart="true"
+                  sortOrder="30"
+                  chartTitle="@Strings.fit_jump_last_chart"
+                  dataLabel="@Strings.fit_jump_last_label"
+                  unitLabel="@Strings.fit_ms_units"
+                  fillColor="#FFAA00" />
+    </fitContributions>
+</resources>

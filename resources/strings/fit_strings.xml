@@ -1,0 +1,14 @@
+<strings>
+    <string id="fit_max_speed_label">Max speed</string>
+    <string id="fit_lap_max_speed_label">Lap max speed</string>
+    <string id="fit_kmh_units">km/h</string>
+
+    <string id="fit_jump_count_label">Jumps</string>
+    <string id="fit_jump_air_label">Air time</string>
+    <string id="fit_jump_long_label">Longest air</string>
+    <string id="fit_jump_last_label">Last air</string>
+    <string id="fit_jump_last_chart">Last jump air</string>
+    <string id="fit_jump_recent_label">Recent airs</string>
+    <string id="fit_ms_units">ms</string>
+    <string id="fit_count_units">count</string>
+</strings>
