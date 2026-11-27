@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
-    <iq:application entry="MxRideApp" id="A7C3E91B4D2F4A6E8B1C0D5E7F908172" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="3.4.1" name="@Strings.AppName" type="watch-app" version="1.0.6">
+    <iq:application entry="MxRideApp" id="A7C3E91B4D2F4A6E8B1C0D5E7F908172" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="3.4.1" name="@Strings.AppName" type="watch-app" version="1.0.7">
         <iq:products>
             <iq:product id="fenix6"/>
             <iq:product id="fenix6s"/>

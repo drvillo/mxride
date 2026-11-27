@@ -40,6 +40,11 @@ class Gforce:
         self.hold_neg_ms = 0
         self.land_peak = 0.0
         self.land_last = 0.0
+        # Per-event landing value, written when a landing window closes and
+        # cleared by clear_second(). sample() uses this instead of the
+        # session-cumulative land_peak so lap 2 cannot inherit lap 1's peak
+        # when lap 2 has no new jumps.
+        self.land_event = 0.0
         self.land_window = max(1, (500 * self.rate) // 1000)
         self.land_left = 0
         self.land_live = False
@@ -58,6 +63,26 @@ class Gforce:
     def arm_landing(self):
         self.land_left = self.land_window
         self.land_live = True
+        self.land_last = 0.0
+
+    def landing_live(self):
+        return self.land_live
+
+    def close_landing(self):
+        """Force the open landing window closed. Finalizes land_last into
+        land_peak (for the LAND label) and land_event (for the next sample)
+        so a lap boundary attributes the landing to the lap where the jump
+        was accepted. No-op when no window is open.
+        """
+        if not self.land_live:
+            return
+        self.land_live = False
+        self.land_left = 0
+        if self.land_last > self.land_peak:
+            self.land_peak = self.land_last
+        if self.land_last > self.land_event:
+            self.land_event = self.land_last
+        self.land_show_ms = 3000
         self.land_last = 0.0
 
     def push(self, ax_mg, ay_mg, az_mg, gx_dps, gy_dps, gz_dps):
@@ -110,6 +135,8 @@ class Gforce:
                 self.land_live = False
                 if self.land_last > self.land_peak:
                     self.land_peak = self.land_last
+                if self.land_last > self.land_event:
+                    self.land_event = self.land_last
                 self.land_show_ms = 3000
         linx = ax - dot * self.gx
         liny = ay - dot * self.gy
@@ -155,6 +182,7 @@ class Gforce:
         self.lat_peak = 0.0
         self.lon_peak = 0.0
         self.combined_peak = 0.0
+        self.land_event = 0.0
 
     def ring_value(self):
         if -self.peak_neg > self.peak_pos:
@@ -178,3 +206,84 @@ class Gforce:
         self.box_i = (self.box_i + 1) % self.window
         self.box_sum += v - old
         return self.box_sum / self.window
+
+
+class RideSessionMirror:
+    """Mirror of source/RideSession.mc's sample() and lap() for the G-force
+    session/lap maxima (max_land_g, max_corner_g, max_brake_g, max_accel_g
+    and their lap counterparts). Keep the thresholds and ordering in
+    lockstep with sample() and lap() in RideSession.mc.
+
+    sample() must be invoked once per emulated second (after the Gforce
+    detector has consumed that second's samples), and lap() takes the same
+    role as pressing the lap button. lap() returns a dict with the lap
+    totals captured right before the lap boundary reset, matching what
+    RideSession would write to the FIT lap message.
+    """
+
+    def __init__(self, gforce):
+        self.g = gforce
+        self.max_land = 0.0
+        self.max_corner = 0.0
+        self.max_brake = 0.0
+        self.max_accel = 0.0
+        self.max_combined = 0.0
+        self.lap_max_land = 0.0
+        self.lap_max_corner = 0.0
+        self.lap_max_brake = 0.0
+        self.lap_max_accel = 0.0
+        self.prev_gps_mps = 0.0
+        self.had_prev_gps = False
+        self.laps = 0
+
+    def sample(self, has_fix=True, cur_speed_mps=0.0):
+        g = self.g
+        cur = cur_speed_mps if has_fix else 0.0
+        if self.had_prev_gps:
+            g.note_gps_second(self.prev_gps_mps, cur)
+        self.prev_gps_mps = cur
+        self.had_prev_gps = True
+        g.advance_second()
+        lat_val = g.lat_peak
+        lon_val = g.lon_peak
+        land = g.land_event
+        corner_abs = abs(lat_val)
+        combined = g.combined_peak
+        if land > self.max_land:
+            self.max_land = land
+        if land > self.lap_max_land:
+            self.lap_max_land = land
+        if corner_abs >= 0.3 and corner_abs > self.max_corner:
+            self.max_corner = corner_abs
+        if corner_abs >= 0.3 and corner_abs > self.lap_max_corner:
+            self.lap_max_corner = corner_abs
+        if lon_val <= -0.3:
+            braking = -lon_val
+            if braking > self.max_brake:
+                self.max_brake = braking
+            if braking > self.lap_max_brake:
+                self.lap_max_brake = braking
+        elif lon_val >= 0.3:
+            if lon_val > self.max_accel:
+                self.max_accel = lon_val
+            if lon_val > self.lap_max_accel:
+                self.lap_max_accel = lon_val
+        if combined > self.max_combined:
+            self.max_combined = combined
+        g.clear_second()
+
+    def lap(self, has_fix=True, cur_speed_mps=0.0):
+        self.g.close_landing()
+        self.sample(has_fix=has_fix, cur_speed_mps=cur_speed_mps)
+        finalized = {
+            "lap_max_land": self.lap_max_land,
+            "lap_max_corner": self.lap_max_corner,
+            "lap_max_brake": self.lap_max_brake,
+            "lap_max_accel": self.lap_max_accel,
+        }
+        self.laps += 1
+        self.lap_max_land = 0.0
+        self.lap_max_corner = 0.0
+        self.lap_max_brake = 0.0
+        self.lap_max_accel = 0.0
+        return finalized
