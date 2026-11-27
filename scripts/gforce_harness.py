@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from gforce import Gforce
+from gforce import Gforce, RideSessionMirror
 
 
 G = 1000  # milli-g at rest.
@@ -192,11 +192,115 @@ def run():
     # Simpler assertion: hold is >= current peak.
     fails += 0 if det.hold_pos >= r4["peak_pos"] - 0.05 else 1
 
+    fails += lap_boundary_checks(rate)
+
     if fails == 0:
         print("\nAll checks passed.")
     else:
         print(f"\n{fails} check(s) failed.")
     sys.exit(0 if fails == 0 else 1)
+
+
+def push_rows(det, rows, arm_at=None):
+    for i, row in enumerate(rows):
+        if arm_at is not None and i == arm_at:
+            det.arm_landing()
+        det.push(*row)
+
+
+def flat_second(session, det, rate, speed=15.0):
+    push_rows(det, flat_rest(rate))
+    session.sample(cur_speed_mps=speed)
+
+
+def lap_boundary_checks(rate):
+    """Lap-boundary regression tests. Verify that a lap-level peak from lap 1
+    does not leak into lap 2 when lap 2 has no new activity on that axis.
+
+    Covers max_land_g (lap field id 19), max_corner_g (id 20), max_brake_g
+    (id 21) and max_accel_g (id 22), plus the edge case of pressing lap
+    while a landing window is still open."""
+    fails = 0
+
+    print("\n== lap boundary: landing in lap 1, lap 2 has no jumps ==")
+    det = warm_detector(rate, True)
+    session = RideSessionMirror(det)
+    flat_second(session, det, rate)
+    rows = hard_landing(rate, peak_g=4.0, sample_idx=rate // 2)
+    push_rows(det, rows, arm_at=rate // 2 - 1)
+    session.sample(cur_speed_mps=15.0)
+    flat_second(session, det, rate)
+    lap1_final = session.lap(cur_speed_mps=15.0)
+    for _ in range(5):
+        flat_second(session, det, rate)
+    fails += 0 if within(lap1_final["lap_max_land"], 4.0, 0.2, "lap 1 max_land_g ~ 4 g") else 1
+    fails += 0 if within(session.max_land, 4.0, 0.2, "session max_land_g still ~ 4 g after lap 2") else 1
+    fails += 0 if session.lap_max_land == 0.0 else 1
+    print("  lap 2 lap_max_land after 5 flat seconds = %.3f (want 0.000)" % session.lap_max_land)
+
+    print("\n== lap boundary: lap pressed while landing window is still open ==")
+    det = warm_detector(rate, True)
+    session = RideSessionMirror(det)
+    flat_second(session, det, rate)
+    det.arm_landing()
+    spike_samples = max(1, det.land_window // 2)
+    for _ in range(spike_samples):
+        det.push(0, 0, 3500, 0, 0, 0)
+    assert det.land_live, "setup error: landing window should still be open at lap press"
+    lap1_final = session.lap(cur_speed_mps=15.0)
+    for _ in range(5):
+        flat_second(session, det, rate)
+    fails += 0 if within(lap1_final["lap_max_land"], 3.5, 0.3, "lap 1 max_land_g ~ 3.5 g (closed by lap())") else 1
+    fails += 0 if within(session.max_land, 3.5, 0.3, "session max_land_g ~ 3.5 g") else 1
+    fails += 0 if session.lap_max_land == 0.0 else 1
+    print("  lap 2 lap_max_land after flat ride = %.3f (want 0.000)" % session.lap_max_land)
+
+    print("\n== lap boundary: hard corner in lap 1, no cornering in lap 2 ==")
+    det = warm_detector(rate, True)
+    session = RideSessionMirror(det)
+    flat_second(session, det, rate)
+    rows, speed = berm(rate, extra_load_g=0.4, yaw_dps=60, speed_mps=15)
+    push_rows(det, rows)
+    session.sample(cur_speed_mps=speed)
+    lap1_final = session.lap(cur_speed_mps=speed)
+    for _ in range(5):
+        flat_second(session, det, rate)
+    fails += 0 if lap1_final["lap_max_corner"] >= 1.0 else 1
+    fails += 0 if session.max_corner >= 1.0 else 1
+    fails += 0 if session.lap_max_corner == 0.0 else 1
+    print("  lap 2 lap_max_corner after flat ride = %.3f (want 0.000)" % session.lap_max_corner)
+
+    print("\n== lap boundary: hard brake in lap 1, no braking in lap 2 ==")
+    det = warm_detector(rate, True)
+    session = RideSessionMirror(det)
+    flat_second(session, det, rate)
+    det.gps_dvdt_g = -0.5
+    push_rows(det, flat_rest(rate))
+    session.sample(cur_speed_mps=10.0)
+    lap1_final = session.lap(cur_speed_mps=10.0)
+    for _ in range(5):
+        flat_second(session, det, rate, speed=10.0)
+    fails += 0 if lap1_final["lap_max_brake"] >= 0.3 else 1
+    fails += 0 if session.max_brake >= 0.3 else 1
+    fails += 0 if session.lap_max_brake == 0.0 else 1
+    print("  lap 2 lap_max_brake after flat ride = %.3f (want 0.000)" % session.lap_max_brake)
+
+    print("\n== lap boundary: hard accel in lap 1, no accel in lap 2 ==")
+    det = warm_detector(rate, True)
+    session = RideSessionMirror(det)
+    flat_second(session, det, rate, speed=5.0)
+    det.gps_dvdt_g = 0.5
+    push_rows(det, flat_rest(rate))
+    session.sample(cur_speed_mps=10.0)
+    lap1_final = session.lap(cur_speed_mps=10.0)
+    for _ in range(5):
+        flat_second(session, det, rate, speed=10.0)
+    fails += 0 if lap1_final["lap_max_accel"] >= 0.3 else 1
+    fails += 0 if session.max_accel >= 0.3 else 1
+    fails += 0 if session.lap_max_accel == 0.0 else 1
+    print("  lap 2 lap_max_accel after flat ride = %.3f (want 0.000)" % session.lap_max_accel)
+
+    return fails
 
 
 if __name__ == "__main__":
