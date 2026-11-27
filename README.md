@@ -1,6 +1,6 @@
 # MX Ride
 
-Watch app for motocross and desert riding. Version 1.0.6. The big number is speed in km/h. A G-ring wraps every edge of the ride page: green clockwise from 12 for compression and landings, red counter-clockwise for unloading and free fall, with a 3 s peak-hold tick and a thin yellow inner arc for cornering / braking direction. DOWN opens max speed, heading and altitude, then a north-up track, then jump count and air time.
+Watch app for motocross and desert riding. Version 1.0.7 — lap with no jumps no longer shows the previous lap's landing G; landing open at a lap press counts for the jump's lap. The big number is speed in km/h. A G-ring wraps every edge of the ride page: green clockwise from 12 for compression and landings, red counter-clockwise for unloading and free fall, with a 3 s peak-hold tick and a thin yellow inner arc for cornering / braking direction. DOWN opens max speed, heading and altitude, then a north-up track, then jump count and air time.
 
 1.0.6 is three things stacked on 1.0.5: a G-ring on the ride page, per-second G capture in the FIT file, and Garmin Connect labels for every developer field, new and old.
 
