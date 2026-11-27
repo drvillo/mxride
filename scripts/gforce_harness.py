@@ -209,8 +209,24 @@ def push_rows(det, rows, arm_at=None):
 
 
 def flat_second(session, det, rate, speed=15.0):
+    det.set_speed(True, speed)
     push_rows(det, flat_rest(rate))
     session.sample(cur_speed_mps=speed)
+
+
+def lap2_zero(label, value):
+    """Visible pass/fail for a lap-2 lap-max assertion."""
+    ok = value == 0.0
+    tag = "OK " if ok else "FAIL"
+    print(f"  [{tag}] lap 2 {label}: got {value:.3f}, want 0.000")
+    return 0 if ok else 1
+
+
+def lap1_at_least(label, value, floor):
+    ok = value >= floor
+    tag = "OK " if ok else "FAIL"
+    print(f"  [{tag}] lap 1 {label}: got {value:.3f}, want >= {floor:.3f}")
+    return 0 if ok else 1
 
 
 def lap_boundary_checks(rate):
@@ -235,8 +251,7 @@ def lap_boundary_checks(rate):
         flat_second(session, det, rate)
     fails += 0 if within(lap1_final["lap_max_land"], 4.0, 0.2, "lap 1 max_land_g ~ 4 g") else 1
     fails += 0 if within(session.max_land, 4.0, 0.2, "session max_land_g still ~ 4 g after lap 2") else 1
-    fails += 0 if session.lap_max_land == 0.0 else 1
-    print("  lap 2 lap_max_land after 5 flat seconds = %.3f (want 0.000)" % session.lap_max_land)
+    fails += lap2_zero("lap_max_land after 5 flat seconds", session.lap_max_land)
 
     print("\n== lap boundary: lap pressed while landing window is still open ==")
     det = warm_detector(rate, True)
@@ -252,53 +267,54 @@ def lap_boundary_checks(rate):
         flat_second(session, det, rate)
     fails += 0 if within(lap1_final["lap_max_land"], 3.5, 0.3, "lap 1 max_land_g ~ 3.5 g (closed by lap())") else 1
     fails += 0 if within(session.max_land, 3.5, 0.3, "session max_land_g ~ 3.5 g") else 1
-    fails += 0 if session.lap_max_land == 0.0 else 1
-    print("  lap 2 lap_max_land after flat ride = %.3f (want 0.000)" % session.lap_max_land)
+    fails += lap2_zero("lap_max_land after flat ride", session.lap_max_land)
 
     print("\n== lap boundary: hard corner in lap 1, no cornering in lap 2 ==")
     det = warm_detector(rate, True)
     session = RideSessionMirror(det)
     flat_second(session, det, rate)
     rows, speed = berm(rate, extra_load_g=0.4, yaw_dps=60, speed_mps=15)
+    det.set_speed(True, speed)
     push_rows(det, rows)
     session.sample(cur_speed_mps=speed)
     lap1_final = session.lap(cur_speed_mps=speed)
     for _ in range(5):
         flat_second(session, det, rate)
-    fails += 0 if lap1_final["lap_max_corner"] >= 1.0 else 1
-    fails += 0 if session.max_corner >= 1.0 else 1
-    fails += 0 if session.lap_max_corner == 0.0 else 1
-    print("  lap 2 lap_max_corner after flat ride = %.3f (want 0.000)" % session.lap_max_corner)
+    fails += lap1_at_least("max_corner_g", lap1_final["lap_max_corner"], 1.0)
+    fails += lap1_at_least("session max_corner_g", session.max_corner, 1.0)
+    fails += lap2_zero("lap_max_corner after flat ride", session.lap_max_corner)
 
     print("\n== lap boundary: hard brake in lap 1, no braking in lap 2 ==")
     det = warm_detector(rate, True)
     session = RideSessionMirror(det)
     flat_second(session, det, rate)
+    # Inject a 1 s GPS deceleration directly. The sample() that follows
+    # reads lon_peak from these pushes, then updates its own dvdt.
     det.gps_dvdt_g = -0.5
+    det.set_speed(True, 10.0)
     push_rows(det, flat_rest(rate))
     session.sample(cur_speed_mps=10.0)
     lap1_final = session.lap(cur_speed_mps=10.0)
     for _ in range(5):
         flat_second(session, det, rate, speed=10.0)
-    fails += 0 if lap1_final["lap_max_brake"] >= 0.3 else 1
-    fails += 0 if session.max_brake >= 0.3 else 1
-    fails += 0 if session.lap_max_brake == 0.0 else 1
-    print("  lap 2 lap_max_brake after flat ride = %.3f (want 0.000)" % session.lap_max_brake)
+    fails += lap1_at_least("max_brake_g", lap1_final["lap_max_brake"], 0.3)
+    fails += lap1_at_least("session max_brake_g", session.max_brake, 0.3)
+    fails += lap2_zero("lap_max_brake after flat ride", session.lap_max_brake)
 
     print("\n== lap boundary: hard accel in lap 1, no accel in lap 2 ==")
     det = warm_detector(rate, True)
     session = RideSessionMirror(det)
     flat_second(session, det, rate, speed=5.0)
     det.gps_dvdt_g = 0.5
+    det.set_speed(True, 10.0)
     push_rows(det, flat_rest(rate))
     session.sample(cur_speed_mps=10.0)
     lap1_final = session.lap(cur_speed_mps=10.0)
     for _ in range(5):
         flat_second(session, det, rate, speed=10.0)
-    fails += 0 if lap1_final["lap_max_accel"] >= 0.3 else 1
-    fails += 0 if session.max_accel >= 0.3 else 1
-    fails += 0 if session.lap_max_accel == 0.0 else 1
-    print("  lap 2 lap_max_accel after flat ride = %.3f (want 0.000)" % session.lap_max_accel)
+    fails += lap1_at_least("max_accel_g", lap1_final["lap_max_accel"], 0.3)
+    fails += lap1_at_least("session max_accel_g", session.max_accel, 0.3)
+    fails += lap2_zero("lap_max_accel after flat ride", session.lap_max_accel)
 
     return fails
 

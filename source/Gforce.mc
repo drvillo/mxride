@@ -58,6 +58,11 @@ class Gforce {
     private var _landLeft as Number = 0;
     private var _landLive as Boolean = false;
     private var _landShowMs as Number = 0;
+    // Per-event landing value, written once when a landing window closes
+    // and cleared by clearSecond(). RideSession.sample() uses this instead
+    // of the session-cumulative _landPeak so lap 2's max_land_g cannot
+    // inherit the previous lap's peak when lap 2 has no new landings.
+    private var _landEvent as Float = 0.0;
     // Convergence counter: samples where gravity was safe to nudge.
     private var _imuOkSamples as Number = 0;
     private var _imuTotalSamples as Number = 0;
@@ -101,6 +106,33 @@ class Gforce {
     function armLanding() as Void {
         _landLeft = _landWindowSamples;
         _landLive = true;
+        _landLastPeak = 0.0;
+    }
+
+    function landingLive() as Boolean {
+        return _landLive;
+    }
+
+    // Force an open landing window closed and publish its peak into the
+    // display value and the per-event value, so the next sample() can
+    // attribute the landing to the current lap. Called from
+    // RideSession.lap() so that a jump accepted in lap N (and therefore
+    // counted in lap N) also contributes its landing G to lap N even when
+    // the user presses lap before the 500 ms window elapses. No-op when
+    // no window is open.
+    function closeLanding() as Void {
+        if (!_landLive) {
+            return;
+        }
+        _landLive = false;
+        _landLeft = 0;
+        if (_landLastPeak > _landPeak) {
+            _landPeak = _landLastPeak;
+        }
+        if (_landLastPeak > _landEvent) {
+            _landEvent = _landLastPeak;
+        }
+        _landShowMs = 3000;
         _landLastPeak = 0.0;
     }
 
@@ -173,6 +205,9 @@ class Gforce {
                 if (_landLastPeak > _landPeak) {
                     _landPeak = _landLastPeak;
                 }
+                if (_landLastPeak > _landEvent) {
+                    _landEvent = _landLastPeak;
+                }
                 _landShowMs = 3000;
             }
         }
@@ -242,11 +277,13 @@ class Gforce {
         _latPeak = 0.0;
         _lonPeak = 0.0;
         _combinedPeak = 0.0;
+        _landEvent = 0.0;
     }
 
     function clearLanding() as Void {
         _landPeak = 0.0;
         _landLastPeak = 0.0;
+        _landEvent = 0.0;
         _landLive = false;
         _landLeft = 0;
         _landShowMs = 0;
@@ -299,6 +336,14 @@ class Gforce {
         return _landPeak;
     }
 
+    // Per-event landing value. Non-zero only in the second a landing
+    // window closed, otherwise 0. Cleared by clearSecond(). Session and
+    // lap maxima feed from this instead of landPeak() so that an idle
+    // lap cannot inherit the previous lap's cumulative peak.
+    function landEvent() as Float {
+        return _landEvent;
+    }
+
     function landShowMs() as Number {
         return _landShowMs;
     }
@@ -336,6 +381,7 @@ class Gforce {
         _combinedPeak = 0.0;
         _landPeak = 0.0;
         _landLastPeak = 0.0;
+        _landEvent = 0.0;
         _landLive = false;
         _landLeft = 0;
         _landShowMs = 0;

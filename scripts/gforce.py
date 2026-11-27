@@ -40,6 +40,11 @@ class Gforce:
         self.hold_neg_ms = 0
         self.land_peak = 0.0
         self.land_last = 0.0
+        # Per-event landing value, written when a landing window closes and
+        # cleared by clear_second(). sample() uses this instead of the
+        # session-cumulative land_peak so lap 2 cannot inherit lap 1's peak
+        # when lap 2 has no new jumps.
+        self.land_event = 0.0
         self.land_window = max(1, (500 * self.rate) // 1000)
         self.land_left = 0
         self.land_live = False
@@ -58,6 +63,26 @@ class Gforce:
     def arm_landing(self):
         self.land_left = self.land_window
         self.land_live = True
+        self.land_last = 0.0
+
+    def landing_live(self):
+        return self.land_live
+
+    def close_landing(self):
+        """Force the open landing window closed. Finalizes land_last into
+        land_peak (for the LAND label) and land_event (for the next sample)
+        so a lap boundary attributes the landing to the lap where the jump
+        was accepted. No-op when no window is open.
+        """
+        if not self.land_live:
+            return
+        self.land_live = False
+        self.land_left = 0
+        if self.land_last > self.land_peak:
+            self.land_peak = self.land_last
+        if self.land_last > self.land_event:
+            self.land_event = self.land_last
+        self.land_show_ms = 3000
         self.land_last = 0.0
 
     def push(self, ax_mg, ay_mg, az_mg, gx_dps, gy_dps, gz_dps):
@@ -110,6 +135,8 @@ class Gforce:
                 self.land_live = False
                 if self.land_last > self.land_peak:
                     self.land_peak = self.land_last
+                if self.land_last > self.land_event:
+                    self.land_event = self.land_last
                 self.land_show_ms = 3000
         linx = ax - dot * self.gx
         liny = ay - dot * self.gy
@@ -155,6 +182,7 @@ class Gforce:
         self.lat_peak = 0.0
         self.lon_peak = 0.0
         self.combined_peak = 0.0
+        self.land_event = 0.0
 
     def ring_value(self):
         if -self.peak_neg > self.peak_pos:
@@ -218,7 +246,7 @@ class RideSessionMirror:
         g.advance_second()
         lat_val = g.lat_peak
         lon_val = g.lon_peak
-        land = g.land_peak
+        land = g.land_event
         corner_abs = abs(lat_val)
         combined = g.combined_peak
         if land > self.max_land:
@@ -245,6 +273,7 @@ class RideSessionMirror:
         g.clear_second()
 
     def lap(self, has_fix=True, cur_speed_mps=0.0):
+        self.g.close_landing()
         self.sample(has_fix=has_fix, cur_speed_mps=cur_speed_mps)
         finalized = {
             "lap_max_land": self.lap_max_land,

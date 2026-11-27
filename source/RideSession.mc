@@ -310,6 +310,14 @@ class RideSession {
         if (_phase != PHASE_RECORDING && _phase != PHASE_PAUSED) {
             return;
         }
+        // Force any in-flight landing window closed before the sample() tick
+        // so the landing is attributed to the lap where the jump was
+        // accepted (JumpDetector already counted it there via noteJump).
+        // No-op when no window is open.
+        var gf = _gforce;
+        if (gf != null) {
+            gf.closeLanding();
+        }
         sample();
         var jumps = _jumps;
         if (jumps != null) {
@@ -488,7 +496,11 @@ class RideSession {
             setFloat(_gVertField, vert);
             setFloat(_gLatField, latVal);
             setFloat(_gLonField, lonVal);
-            var land = gforce.landPeak();
+            // landEvent() is non-zero only in the second a landing window
+            // closed. landPeak() is session-cumulative and would fold a
+            // previous lap's peak into the current lap's max_land_g on
+            // every subsequent second (lap field id 19 carryover bug).
+            var land = gforce.landEvent();
             var cornerAbs = absF(latVal);
             var combined = gforce.combinedPeak();
             // Floor thresholds keep sensor noise out of the summary. These
